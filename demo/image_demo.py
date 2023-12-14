@@ -110,4 +110,8 @@ def main():
 
 
 if __name__ == '__main__':
+
+    img_path = r""
+
+
     main()

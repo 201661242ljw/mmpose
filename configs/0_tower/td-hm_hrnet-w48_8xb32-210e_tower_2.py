@@ -2,30 +2,32 @@ _base_ = ['../../configs/_base_/default_runtime.py']
 
 heatmap_scale = 4
 
-batch_size = 4
+batch_size = 2
 
-input_size = 640
+input_size = 1280
+epoch_num = 100
+
 
 use_medium_satge = True
 target_form = 1
 # --------------------------------
 output_form_1 = True
-sigma_1 = 4
-paf_half_width_1 = 4
+sigma_1 = 8
+paf_half_width_1 = 8
 num_keypoints_1 = 5
 num_skeletons_1 = 5
 # --------------------------------
 output_form_2 = True
-sigma_2 = 2
-paf_half_width_2 = 2
+sigma_2 = 5
+paf_half_width_2 = 5
 num_keypoints_2 = 5
 num_skeletons_2 = 5
 # --------------------------------
 output_form_3 = True
-sigma_3 = 0.5
-paf_half_width_3 = 1.25
+sigma_3 = 1.5
+paf_half_width_3 = 2
 num_keypoints_3 = 5
-num_skeletons_3 = 21
+num_skeletons_3 = 22
 # --------------------------------
 channel_labels = [
     [num_keypoints_1, num_skeletons_1, int(output_form_1), sigma_1],
@@ -43,7 +45,7 @@ else:
     channel_labels = [channel_labels[target_form - 1]]
     channel_labels[0][2] = 1
 # runtime
-train_cfg = dict(max_epochs=50, val_interval=110)
+train_cfg = dict(max_epochs=epoch_num, val_interval=110)
 
 # optimizer
 optim_wrapper = dict(optimizer=dict(
@@ -188,7 +190,7 @@ train_pipeline = [
     # dict(type='RandomHalfBody'),
     dict(type='LJW_RandomBBoxTransform',
          shift_factor=0.1, shift_prob=1.0,
-         scale_factor=(0.75, 1.25), scale_prob=1.0,
+         scale_factor=(0.95, 1.15), scale_prob=1.0,
          rotate_factor=7.5, rotate_prob=1.0),
     dict(type='LJW_TopdownAffine_2', input_size=codec['input_size']),
     # results['input_size'] = (w, h)       # results['input_center'] = center     #   results['input_scale'] = scale

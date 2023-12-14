@@ -326,8 +326,9 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
 
                     # indexA, indexB = limbSeq[k]
                     if (nA != 0 and nB != 0):
-                        connection_candidate = []
                         for i in range(nA):
+                            connection_candidate = None
+                            max_temp = 0
                             for j in range(nB):
                                 vec = np.subtract(candB[j][:2], candA[i][:2])
                                 norm = math.sqrt(vec[0] * vec[0] + vec[1] * vec[1])
@@ -347,7 +348,7 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
                                 score_midpts = np.multiply(vec_x, vec[0]) + np.multiply(vec_y, vec[1])
                                 score_with_dist_prior = sum(score_midpts) / len(score_midpts) + min(
                                     0.5 * img.shape[0] / norm - 1, 0)
-                                criterion1 = len(np.nonzero(score_midpts > thre2)[0]) > 0.9 * len(score_midpts)
+                                criterion1 = len(np.nonzero(score_midpts > thre2)[0]) > 0.8 * len(score_midpts)
                                 criterion2 = score_with_dist_prior > 0
                                 if criterion1 and criterion2:
                                     # pt1_type,pt1_id,pt1_x,pt1_y
@@ -357,22 +358,29 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
                                                 limbSeq[k][1] + 1, candB[j][2], candB[j][0], candB[j][1],
                                                 norm, vec[0], vec[1], k + 1, score_with_dist_prior,
                                                 score_with_dist_prior + candA[i][2] + candB[j][2]]
-                                    if k == 1:
-                                        need_record = True
-                                        if len(special_connection) != 0:
-                                            for (idx, skeleton_temp) in enumerate(special_connection):
-                                                if skeleton_temp[1] == candA[i][2]:
-                                                    if vec[0] * skeleton_temp[9] + vec[1] * skeleton_temp[10] > 0.9:
-                                                        need_record = False
-                                                        if norm < skeleton_temp[8]:
-                                                            special_connection[idx] = skeleton
-                                        if need_record:
-                                            special_connection.append(skeleton)
-                                    else:
-                                        connection_all.append(skeleton)
+                                    # if k == 1:
+                                    #     need_record = True
+                                    #     if len(special_connection) != 0:
+                                    #         for (idx, skeleton_temp) in enumerate(special_connection):
+                                    #             if skeleton_temp[1] == candA[i][2]:
+                                    #                 if vec[0] * skeleton_temp[9] + vec[1] * skeleton_temp[10] > 0.9:
+                                    #                     need_record = False
+                                    #                     if norm < skeleton_temp[8]:
+                                    #                         special_connection[idx] = skeleton
+                                    #     if need_record:
+                                    #         special_connection.append(skeleton)
+                                    # else:
+                                    #     connection_all.append(skeleton)
+                                    if skeleton[-1] > max_temp:
+
+                                        connection_candidate = skeleton
+                                        max_temp = skeleton[-1]
+                            if connection_candidate is not None:
+                                connection_all.append(connection_candidate)
+
                 connection_all = connection_all + special_connection
                 pt_drawn = []
-                img = img // 2
+                img = img // 4
                 for [pt1_type, pt1_id, pt1_x, pt1_y, pt2_type, pt2_id, pt2_x, pt2_y, length, vec_x, vec_y,
                      skeleton_type, skeleton_score, skeelton_and_pts_score] in connection_all:
                     if not pt1_id in pt_drawn:
@@ -386,7 +394,7 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
                     img = cv2.line(img, (pt1_x, pt1_y), (pt2_x, pt2_y), thickness=3,
                                    color=sk_colores[skeleton_type - 1])
                 cv2.imwrite(os.path.join(save_dir, "0_show.jpg"), img)
-                exit()
+                # exit()
 
         else:
             raise RuntimeError(f'Invalid mode "{mode}". '

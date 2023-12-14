@@ -167,6 +167,6 @@ if __name__ == '__main__':
 
     out_dir = "LJW_test"
     show_path = "show"
-    model_path = r"E:\LJW\Git\mmpose\tools\LJW_Log\2023-12-13_00-12-42\epoch_100.pth"
-    config_path = r"E:\LJW\Git\mmpose\tools\LJW_Log\2023-12-13_00-12-42\td-hm_hrnet-w48_8xb32-210e_tower_2.py"
+    model_path = r"E:\LJW\Git\mmpose\tools\LJW_Log\2023-12-13_23-40-23\epoch_30.pth"
+    config_path = r"E:\LJW\Git\mmpose\tools\LJW_Log\2023-12-13_23-40-23\td-hm_hrnet-w48_8xb32-210e_tower_2.py"
     main()

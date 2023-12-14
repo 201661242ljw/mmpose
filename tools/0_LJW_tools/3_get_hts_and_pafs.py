@@ -158,16 +158,24 @@ def main():
                             new_types.append(temp_dict["type"])
                             temp_data[image_name][f'new_keypoints_{sheet_order}'].append(
                                 [new_point_name, x, y, temp_dict["type"]])
-                            if new_point_names == "4_2_4":
-                                special_flag = 1
+                            if sheet_order == 2:
+                                if new_point_name == "4_2_4":
+                                    special_flag = 1
+                            elif sheet_order == 3:
+                                if new_point_name == "4_2_7":
+                                    special_flag = 1
+
 
                     # skeleton
                     for (_, temp_dict) in skeleton_data.items():
                         p1 = temp_dict['p1']
                         p2 = temp_dict["p2"]
                         t = temp_dict["type"]
-                        if special_flag:
+                        if special_flag and sheet_order == 2:
                             if p1 == "4_2_2" and p2 == "4_3_2":
+                                continue
+                        if special_flag and sheet_order == 3:
+                            if p1 in ["4_2_2", "4_2_3", "4_2_4", "4_2_5"] and "4_3_" in p2:
                                 continue
 
                         if p1 in new_point_names and p2 in new_point_names:
@@ -369,7 +377,7 @@ def step2():
                     img_data[f"new_skeletons_{type_}"] = new_skeletons.tolist()
 
                     # if flag in already_draw_list and not "scene" in img_name:
-                    if flag in already_draw_list:
+                    if flag in already_draw_list and  '04_4_020_head_no_0_0' not in img_name and "11_1_250_head_have_3_0" not in img_name:
                         continue
 
                     img = cv2.imread(img_path, 1)
@@ -381,9 +389,9 @@ def step2():
 
                     for [x1, y1, t1, x2, y2, t2, kt] in img_data[f"new_skeletons_{type_}"]:
                         new_img = cv2.circle(new_img, center=(x1, y1), color=pt_colors[t1 - 1], thickness=-1,
-                                             radius=new_size // 128)
+                                             radius=new_size // 256)
                         new_img = cv2.circle(new_img, center=(x2, y2), color=pt_colors[t2 - 1], thickness=-1,
-                                             radius=new_size // 128)
+                                             radius=new_size // 256)
                         new_img = cv2.arrowedLine(new_img, pt1=(x1, y1), pt2=((x2 + x1) // 2, (y1 + y2) // 2),
                                                   color=sk_colores[kt - 1], thickness=2)
                         new_img = cv2.line(new_img, pt1=(x1, y1), pt2=(x2, y2), color=sk_colores[kt - 1], thickness=1)
@@ -410,7 +418,7 @@ if __name__ == '__main__':
     num_skeleton_type = 12
     ue_src_dir = r""
     bgr_colors = []
-    hue_steps = 21  # 均分的色调数量
+    hue_steps = 22  # 均分的色调数量
     saturation = 1.0  # 最大饱和度
     value = 1.0  # 最大明度
     for i in range(hue_steps):
