@@ -164,7 +164,7 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
             outputs = self._forward(inputs)
 
             bgr_colors = []
-            hue_steps = 21  # 均分的色调数量
+            hue_steps = 22  # 均分的色调数量
             saturation = 1.0  # 最大饱和度
             value = 1.0  # 最大明度
             for i in range(hue_steps):
@@ -178,7 +178,7 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
                 img_name = os.path.basename(data_sample.img_path)
                 # if not "04_2_066_head_have_2_0" in img_name:
                 #     continue
-                save_dir = r"E:\LJW\Git\mmpose\tools\0_LJW_tools\predict_show_1024_temp_4/{}".format(
+                save_dir = r"E:\LJW\Git\mmpose\tools\0_LJW_tools\predict_show_1024_temp_5/{}".format(
                     img_name.split(".")[0])
                 if not os.path.exists(save_dir):
                     os.makedirs(save_dir)
@@ -192,7 +192,7 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
                 org_img_path = os.path.join(save_dir, img_name)
                 # cv2.imwrite(org_img_path, img)
 
-                output = outputs[idx, :, :, :].detach().cpu().numpy()[-47:]
+                output = outputs[idx, :, :, :].detach().cpu().numpy()[-49:]
                 for i in range(output.shape[0]):
                     ht = output[i]
                     r = np.clip(ht, 0, 1) * 255
@@ -221,7 +221,7 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
                 thre2 = 0.05
                 for part in range(heatmap_avg.shape[2]):
                     map_ori = heatmap_avg[:, :, part]
-                    one_heatmap = gaussian_filter(map_ori, sigma=3)
+                    one_heatmap = gaussian_filter(map_ori, sigma=1.5)
 
                     map_left = np.zeros(one_heatmap.shape)
                     map_left[1:, :] = one_heatmap[:-1, :]
@@ -279,6 +279,7 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
                     [2, 2],
                     [1, 3],
                     [1, 3],
+                    [3, 3],
                     [1, 3],
                     [4, 0],
                     [4, 0],
@@ -309,7 +310,8 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
                     [34, 35],
                     [36, 37],
                     [38, 39],
-                    [40, 41]
+                    [40, 41],
+                    [42, 43]
                 ]
 
                 connection_all = []
@@ -372,7 +374,6 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
                                     # else:
                                     #     connection_all.append(skeleton)
                                     if skeleton[-1] > max_temp:
-
                                         connection_candidate = skeleton
                                         max_temp = skeleton[-1]
                             if connection_candidate is not None:
@@ -384,14 +385,14 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
                 for [pt1_type, pt1_id, pt1_x, pt1_y, pt2_type, pt2_id, pt2_x, pt2_y, length, vec_x, vec_y,
                      skeleton_type, skeleton_score, skeelton_and_pts_score] in connection_all:
                     if not pt1_id in pt_drawn:
-                        img = cv2.circle(img, center=(pt1_x, pt1_y), radius=10, color=pt_colors[pt1_type - 1],
+                        img = cv2.circle(img, center=(pt1_x, pt1_y), radius=5, color=pt_colors[pt1_type - 1],
                                          thickness=-1)
                         pt_drawn.append(pt1_id)
                     if not pt2_id in pt_drawn:
-                        img = cv2.circle(img, center=(pt2_x, pt2_y), radius=10, color=pt_colors[pt2_type - 1],
+                        img = cv2.circle(img, center=(pt2_x, pt2_y), radius=5, color=pt_colors[pt2_type - 1],
                                          thickness=-1)
                         pt_drawn.append(pt2_id)
-                    img = cv2.line(img, (pt1_x, pt1_y), (pt2_x, pt2_y), thickness=3,
+                    img = cv2.line(img, (pt1_x, pt1_y), (pt2_x, pt2_y), thickness=1,
                                    color=sk_colores[skeleton_type - 1])
                 cv2.imwrite(os.path.join(save_dir, "0_show.jpg"), img)
                 # exit()

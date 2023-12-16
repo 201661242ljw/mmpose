@@ -165,8 +165,18 @@ def main():
 
 if __name__ == '__main__':
 
+
+    log_date = r"2023-12-14_11-32-35"
+    log_dir = r"E:\LJW\Git\mmpose\tools\LJW_Log\{}".format(log_date)
+    max_epoch = 0
+    for file_name in os.listdir(log_dir):
+        if "epoch" in file_name:
+            if int(file_name.split(".")[0].split("_")[1]) > max_epoch:
+                model_path = r"{}\{}".format(log_dir, file_name)
+                max_epoch =  int(file_name.split(".")[0].split("_")[1])
+        if ".py" in file_name:
+            config_path = r"{}\{}".format(log_dir, file_name)
     out_dir = "LJW_test"
+    model_path = r"E:\LJW\Git\mmpose\tools\LJW_Log\2023-12-14_11-32-35\epoch_20.pth"
     show_path = "show"
-    model_path = r"E:\LJW\Git\mmpose\tools\LJW_Log\2023-12-13_23-40-23\epoch_30.pth"
-    config_path = r"E:\LJW\Git\mmpose\tools\LJW_Log\2023-12-13_23-40-23\td-hm_hrnet-w48_8xb32-210e_tower_2.py"
     main()

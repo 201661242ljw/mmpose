@@ -10,6 +10,40 @@ from .utils.gaussian_heatmap import (generate_gaussian_heatmaps,
 from .utils.post_processing import get_heatmap_maximum
 from .utils.refinement import refine_keypoints, refine_keypoints_dark
 
+from scipy.ndimage.filters import gaussian_filter
+
+
+def get_all_peaks(heatmap, sigma):
+    all_peaks = []
+    all_scores = []
+    peak_counter = 0
+    thre1 = 0.1
+    for part in range(heatmap.shape[0]):
+        map_ori = heatmap[part, :, :]
+        one_heatmap = gaussian_filter(map_ori, sigma=sigma)
+
+        map_left = np.zeros(one_heatmap.shape)
+        map_left[1:, :] = one_heatmap[:-1, :]
+        map_right = np.zeros(one_heatmap.shape)
+        map_right[:-1, :] = one_heatmap[1:, :]
+        map_up = np.zeros(one_heatmap.shape)
+        map_up[:, 1:] = one_heatmap[:, :-1]
+        map_down = np.zeros(one_heatmap.shape)
+        map_down[:, :-1] = one_heatmap[:, 1:]
+
+        peaks_binary = np.logical_and.reduce(
+            (one_heatmap >= map_left, one_heatmap >= map_right, one_heatmap >= map_up,
+             one_heatmap >= map_down, one_heatmap > thre1))
+        peaks = list(zip(np.nonzero(peaks_binary)[1], np.nonzero(peaks_binary)[0]))  # note reverse
+        peaks_with_score = [x + (map_ori[x[1], x[0]],) for x in peaks]
+        peak_id = range(peak_counter, peak_counter + len(peaks))
+        peaks_with_score_and_id = [peaks_with_score[i] + (peak_id[i],) for i in range(len(peak_id))]
+
+        all_peaks.append(peaks_with_score_and_id)
+        all_scores.append([peaks_with_score[i][-1] for i in range(len(peak_id))])
+        peak_counter += len(peaks)
+    return all_peaks, all_scores
+
 
 def get_PAF(p1, p2, array, xx, yy, heatmap_scale, paf_half_width):
     p1 = np.array(p1) // heatmap_scale
@@ -669,12 +703,12 @@ class LJWHeatmapAndPaf_2(BaseKeypointCodec):
 
         heatmaps = np.vstack(lst)
 
-
-
-
-
-
-        encoded = dict(heatmaps=heatmaps, keypoint_weights=np.ones((1, heatmaps.shape[0]), dtype=np.float32))
+        keypoint_weights = np.ones((1, heatmaps.shape[0]), dtype=np.float32)
+        keypoint_weights[:, -49] *= 2
+        keypoint_weights[:, -47] *= 2
+        keypoint_weights[:, -46] *= 2
+        keypoint_weights[:, -45] *= 2
+        encoded = dict(heatmaps=heatmaps, keypoint_weights=keypoint_weights)
 
         return encoded
 
@@ -693,22 +727,29 @@ class LJWHeatmapAndPaf_2(BaseKeypointCodec):
                 usually represents the confidence of the keypoint prediction
         """
         heatmaps = encoded.copy()
-        K, H, W = heatmaps.shape
 
-        keypoints, scores = get_heatmap_maximum(heatmaps)
+        assert self.output_form_3 == True
 
-        # Unsqueeze the instance dimension for single-instance results
-        keypoints, scores = keypoints[None], scores[None]
+        pred_pt = heatmaps[-(self.num_keypoints_3 + self.num_skeletons_3 * 2):-self.num_skeletons_3 * 2, :, :]
 
-        if self.unbiased:
-            # Alleviate biased coordinate
-            keypoints = refine_keypoints_dark(
-                keypoints, heatmaps, blur_kernel_size=self.blur_kernel_size)
+        all_peaks, all_scroes = get_all_peaks(pred_pt, sigma=self.sigma_3)
 
-        else:
-            keypoints = refine_keypoints(keypoints, heatmaps)
+        return all_peaks, all_scroes
 
-        # Restore the keypoint scale
-        keypoints = keypoints * self.scale_factor
-
-        return keypoints, scores
+        # keypoints, scores = get_heatmap_maximum(heatmaps)
+        #
+        # # Unsqueeze the instance dimension for single-instance results
+        # keypoints, scores = keypoints[None], scores[None]
+        #
+        # if self.unbiased:
+        #     # Alleviate biased coordinate
+        #     keypoints = refine_keypoints_dark(
+        #         keypoints, heatmaps, blur_kernel_size=self.blur_kernel_size)
+        #
+        # else:
+        #     keypoints = refine_keypoints(keypoints, heatmaps)
+        #
+        # # Restore the keypoint scale
+        # keypoints = keypoints * self.scale_factor
+        #
+        # return keypoints, scores

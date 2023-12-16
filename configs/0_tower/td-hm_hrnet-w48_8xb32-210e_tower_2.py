@@ -4,28 +4,27 @@ heatmap_scale = 4
 
 batch_size = 2
 
-input_size = 1280
+input_size = 1024
 epoch_num = 100
 
-
 use_medium_satge = True
-target_form = 1
+target_form = 3
 # --------------------------------
 output_form_1 = True
-sigma_1 = 8
-paf_half_width_1 = 8
+sigma_1 = 6
+paf_half_width_1 = 6
 num_keypoints_1 = 5
 num_skeletons_1 = 5
 # --------------------------------
 output_form_2 = True
-sigma_2 = 5
-paf_half_width_2 = 5
+sigma_2 = 4
+paf_half_width_2 = 4
 num_keypoints_2 = 5
 num_skeletons_2 = 5
 # --------------------------------
 output_form_3 = True
-sigma_3 = 1.5
-paf_half_width_3 = 2
+sigma_3 = 2
+paf_half_width_3 =2
 num_keypoints_3 = 5
 num_skeletons_3 = 22
 # --------------------------------
@@ -45,7 +44,7 @@ else:
     channel_labels = [channel_labels[target_form - 1]]
     channel_labels[0][2] = 1
 # runtime
-train_cfg = dict(max_epochs=epoch_num, val_interval=110)
+train_cfg = dict(max_epochs=epoch_num, val_interval=10)
 
 # optimizer
 optim_wrapper = dict(optimizer=dict(
@@ -252,9 +251,18 @@ test_dataloader = dict(
     ))
 
 # evaluators
+# val_evaluator = dict(
+#     type='CocoMetric',
+#     ann_file=data_root + 'anns/tower_keypoints_val_2.json')
+# test_evaluator = dict(
+#     type='CocoMetric',
+#     ann_file=data_root + 'anns/tower_keypoints_test_2.json')
+
 val_evaluator = dict(
-    type='CocoMetric',
+    type='TowerMetric',
+    sigma = sigma_3,
     ann_file=data_root + 'anns/tower_keypoints_val_2.json')
 test_evaluator = dict(
-    type='CocoMetric',
+    type='TowerMetric',
+    sigma = sigma_3,
     ann_file=data_root + 'anns/tower_keypoints_test_2.json')

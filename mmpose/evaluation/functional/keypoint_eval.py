@@ -236,7 +236,7 @@ def pose_pck_accuracy(output: np.ndarray,
     return keypoint_pck_accuracy(pred, gt, mask, thr, normalize)
 
 
-def calculate_precision_recall(detections, ground_truths,sigma, iou_threshold=0.5):
+def calculate_precision_recall(detections, ground_truths, sigma, iou_threshold=0.5):
     tp = 0
     fp = 0
     fn = 0
@@ -306,14 +306,18 @@ def calculate_iou(box1, box2):
 
 def ljw_tower_pose_pack_accuracy(output: list,
                                  target: list,
-                                 channel_labels:list) -> tuple:
+                                 channel_labels: list) -> tuple:
     # N, K, H, W = output.shape
 
     tps = 0
     fps = 0
     fns = 0
     for (output_sample, target_sample) in zip(output, target):
+        idx = 0
         for (output_form, target_form, channel_label) in zip(output_sample, target_sample, channel_labels):
+            idx += 1
+            if idx != len(output_sample):
+                continue
             sigma = channel_label[3]
             for (output_kt_type, target_kt_type) in zip(output_form, target_form):
                 tp, fp, fn = calculate_precision_recall(output_kt_type, target_kt_type, sigma)
@@ -325,15 +329,6 @@ def ljw_tower_pose_pack_accuracy(output: list,
     recall = tps / max(1, (tps + fns))
     f1_score = 2 * (precision * recall) / max(1e-4, (precision + recall))
     return f1_score, precision, recall
-
-    # if K == 0:
-    #     return None, 0, 0
-    # if normalize is None:
-    #     normalize = np.tile(np.array([[H, W]]), (N, 1))
-    #
-    # pred, _ = get_heatmap_maximum(output)
-    # gt, _ = get_heatmap_maximum(target)
-    # return keypoint_pck_accuracy(pred, gt, mask, thr, normalize)
 
 
 def simcc_pck_accuracy(output: Tuple[np.ndarray, np.ndarray],

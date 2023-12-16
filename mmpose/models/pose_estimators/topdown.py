@@ -151,42 +151,46 @@ class TopdownPoseEstimator(BasePoseEstimator):
             input_scale = data_sample.metainfo['input_scale']
             input_size = data_sample.metainfo['input_size']
 
-            pred_instances.keypoints[..., :2] = \
-                pred_instances.keypoints[..., :2] / input_size * input_scale \
-                + input_center - 0.5 * input_scale
-            if 'keypoints_visible' not in pred_instances:
-                pred_instances.keypoints_visible = \
-                    pred_instances.keypoint_scores
+            for list_idx in range(len(pred_instances.keypoints)):
+                for kt_idx in range(len(pred_instances.keypoints[list_idx])):
+                    [x, y, s, id_] = pred_instances.keypoints[list_idx][kt_idx]
+                    x *= 4
+                    y *= 4
+                    pred_instances.keypoints[list_idx][kt_idx] = [x, y, s, id_]
 
-            if output_keypoint_indices is not None:
-                # select output keypoints with given indices
-                num_keypoints = pred_instances.keypoints.shape[1]
-                for key, value in pred_instances.all_items():
-                    if key.startswith('keypoint'):
-                        pred_instances.set_field(
-                            value[:, output_keypoint_indices], key)
+            # if not pred_instances.keypoints.shape[1] == 0:
+            #     pred_instances.keypoints[..., :2] = pred_instances.keypoints[...,
+            #                                         :2] / input_size * input_scale + input_center - 0.5 * input_scale
+            # if 'keypoints_visible' not in pred_instances:
+            #     pred_instances.keypoints_visible = \
+            #         pred_instances.keypoint_scores
+
+            # if output_keypoint_indices is not None:
+            #     # select output keypoints with given indices
+            #     num_keypoints = pred_instances.keypoints.shape[1]
+            #     for key, value in pred_instances.all_items():
+            #         if key.startswith('keypoint'):
+            #             pred_instances.set_field(
+            #                 value[:, output_keypoint_indices], key)
 
             # add bbox information into pred_instances
-            pred_instances.bboxes = gt_instances.bboxes
-            pred_instances.bbox_scores = gt_instances.bbox_scores
+            # pred_instances.bboxes = gt_instances.bboxes
+            # pred_instances.bbox_scores = gt_instances.bbox_scores
 
             data_sample.pred_instances = pred_instances
 
-            if pred_fields is not None:
-                if output_keypoint_indices is not None:
-                    # select output heatmap channels with keypoint indices
-                    # when the number of heatmap channel matches num_keypoints
-                    for key, value in pred_fields.all_items():
-                        if value.shape[0] != num_keypoints:
-                            continue
-                        pred_fields.set_field(value[output_keypoint_indices],
-                                              key)
-                data_sample.pred_fields = pred_fields
+            # if pred_fields is not None:
+            #     if output_keypoint_indices is not None:
+            #         # select output heatmap channels with keypoint indices
+            #         # when the number of heatmap channel matches num_keypoints
+            #         for key, value in pred_fields.all_items():
+            #             if value.shape[0] != num_keypoints:
+            #                 continue
+            #             pred_fields.set_field(value[output_keypoint_indices],
+            #                                   key)
+            #     data_sample.pred_fields = pred_fields
 
         return batch_data_samples
-
-
-
 
 
 @MODELS.register_module()

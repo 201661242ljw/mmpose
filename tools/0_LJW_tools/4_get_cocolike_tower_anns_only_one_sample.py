@@ -4,7 +4,7 @@ import os
 
 import numpy as np
 
-src_dir = r"E:\LJW\Git\00_Tower_Dataset"
+src_dir = r"../data/00_Tower_Dataset"
 
 json_path = r"../data/coco/annotations/person_keypoints_train2017.json"
 template_data = json.load(open(json_path, "r", encoding="utf-8"), strict=False)
@@ -29,6 +29,8 @@ for input_size in [256, 384, 512, 640, 768, 1024, 1280]:
 
         json_path = r"{}/{}/anns/tower_info_{}.json".format(src_dir, input_size, dataset)
         data = json.load(open(json_path, "r", encoding="utf-8"), strict=False)
+
+        num = 0
 
         for (img_name, temp_dict) in data.items():
             width = temp_dict['width']
@@ -69,7 +71,8 @@ for input_size in [256, 384, 512, 640, 768, 1024, 1280]:
 
             img_id += 1
             ann_id += 1
-            if img_id > 1:
+            num += 1
+            if num > 3:
                 break
 
         out_json_path =  r"{}/{}/anns/tower_keypoints_{}_2.json".format(src_dir, input_size, dataset)
