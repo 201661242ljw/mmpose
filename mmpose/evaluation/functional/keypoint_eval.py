@@ -239,7 +239,6 @@ def pose_pck_accuracy(output: np.ndarray,
 def calculate_precision_recall(detections, ground_truths, sigma, iou_threshold=0.5):
     tp = 0
     fp = 0
-    fn = 0
 
     for detection in detections:
         max_iou = 0
@@ -272,7 +271,7 @@ def calculate_iou_like(kt1, kt2, sigma):
     [x1, y1, _, _] = kt1
     [x2, y2, _] = kt2
 
-    w1 = w2 = h1 = h2 = int(sigma * 2)
+    w1 = w2 = h1 = h2 = int(sigma * 3)
 
     left = max(x1, x2)
     top = max(y1, y2)
@@ -318,12 +317,12 @@ def ljw_tower_pose_pack_accuracy(output: list,
             idx += 1
             if idx != len(output_sample):
                 continue
-            sigma = channel_label[3]
+            sigma = channel_label[3] * 2
             for (output_kt_type, target_kt_type) in zip(output_form, target_form):
                 tp, fp, fn = calculate_precision_recall(output_kt_type, target_kt_type, sigma)
                 tps += tp
                 fps += fp
-                fns += fns
+                fns += fn
 
     precision = tps / max(1, (tps + fps))
     recall = tps / max(1, (tps + fns))

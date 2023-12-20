@@ -93,15 +93,13 @@ model = dict(
                 block='BASIC',
                 num_blocks=(4, 4, 4, 4),
                 num_channels=(48, 96, 192, 384))),
-        # init_cfg=dict(
-        #     type='Pretrained',
-        #     # checkpoint='https://download.openmmlab.com/mmpose/'
-        #     #            'pretrain_models/hrnet_w48-8ef0771d.pth',
-        #     checkpoint=''
-        # ),
+        init_cfg=dict(
+            type='Pretrained',
+            checkpoint='https://download.openmmlab.com/mmpose/pretrain_models/hrnet_w48-8ef0771d.pth',
+            # checkpoint=''
+        ),
     ),
 
-    
     head=dict(
         type='HeatmapHead',
         in_channels=48,

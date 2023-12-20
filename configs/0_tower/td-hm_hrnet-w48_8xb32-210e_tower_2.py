@@ -5,7 +5,7 @@ heatmap_scale = 4
 batch_size = 2
 
 input_size = 1024
-epoch_num = 100
+epoch_num = 210
 
 use_medium_satge = True
 target_form = 3
@@ -24,7 +24,7 @@ num_skeletons_2 = 5
 # --------------------------------
 output_form_3 = True
 sigma_3 = 2
-paf_half_width_3 =2
+paf_half_width_3 =2.5
 num_keypoints_3 = 5
 num_skeletons_3 = 22
 # --------------------------------
@@ -44,7 +44,7 @@ else:
     channel_labels = [channel_labels[target_form - 1]]
     channel_labels[0][2] = 1
 # runtime
-train_cfg = dict(max_epochs=epoch_num, val_interval=10)
+train_cfg = dict(max_epochs=epoch_num, val_interval=5)
 
 # optimizer
 optim_wrapper = dict(optimizer=dict(

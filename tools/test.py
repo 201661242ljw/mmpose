@@ -32,7 +32,8 @@ def parse_args():
     parser.add_argument(
         '--show-dir',
         help='directory where the visualization images will be saved.',
-    default=show_path)
+    # default=show_path
+    )
     parser.add_argument(
         '--show',
         action='store_true',
@@ -166,17 +167,23 @@ def main():
 if __name__ == '__main__':
 
 
-    log_date = r"2023-12-14_11-32-35"
+    log_date = r"2023-12-16_12-49-10"
     log_dir = r"E:\LJW\Git\mmpose\tools\LJW_Log\{}".format(log_date)
     max_epoch = 0
     for file_name in os.listdir(log_dir):
+        if "best" in file_name:
+            model_path = r"{}\{}".format(log_dir, file_name)
+            break
+
         if "epoch" in file_name:
             if int(file_name.split(".")[0].split("_")[1]) > max_epoch:
                 model_path = r"{}\{}".format(log_dir, file_name)
                 max_epoch =  int(file_name.split(".")[0].split("_")[1])
+
+    for file_name in os.listdir(log_dir):
         if ".py" in file_name:
             config_path = r"{}\{}".format(log_dir, file_name)
     out_dir = "LJW_test"
-    model_path = r"E:\LJW\Git\mmpose\tools\LJW_Log\2023-12-14_11-32-35\epoch_20.pth"
-    show_path = "show"
+    # model_path = r"E:\LJW\Git\mmpose\tools\LJW_Log\2023-12-16_12-49-10\best_coco_AP_epoch_185.pth"
+    # show_path = "show"
     main()

@@ -72,7 +72,7 @@ for input_size in [256, 384, 512, 640, 768, 1024, 1280]:
             img_id += 1
             ann_id += 1
             num += 1
-            if num > 3:
+            if num > 9:
                 break
 
         out_json_path =  r"{}/{}/anns/tower_keypoints_{}_2.json".format(src_dir, input_size, dataset)

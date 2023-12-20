@@ -83,7 +83,7 @@ def ljw_tower_pose_pack_accuracy(output: list,
         tp, fp, fn = calculate_precision_recall(output_kt_type, target_kt_type, sigma, iou_threshold=iou_threshold)
         tps += tp
         fps += fp
-        fns += fns
+        fns += fn
     return tps, fps, fns
 
 
@@ -596,7 +596,7 @@ class TowerMetric(BaseMetric):
 
 
         # split prediction and gt list
-        preds, gts = zip(*results)
+        # preds, gts = zip(*results)
 
         tmp_dir = None
         if self.outfile_prefix is None:
@@ -605,12 +605,12 @@ class TowerMetric(BaseMetric):
         else:
             outfile_prefix = self.outfile_prefix
 
-        if self.coco is None:
-            # use converted gt json file to initialize coco helper
-            logger.info('Converting ground truth to coco format...')
-            coco_json_path = self.gt_to_coco_json(
-                gt_dicts=gts, outfile_prefix=outfile_prefix)
-            self.coco = COCO(coco_json_path)
+        # if self.coco is None:
+        #     # use converted gt json file to initialize coco helper
+        #     logger.info('Converting ground truth to coco format...')
+            # coco_json_path = self.gt_to_coco_json(
+            #     gt_dicts=gts, outfile_prefix=outfile_prefix)
+            # self.coco = COCO(coco_json_path)
         if self.gt_converter is not None:
             for id_, ann in self.coco.anns.items():
                 self.coco.anns[id_] = transform_ann(
@@ -619,13 +619,20 @@ class TowerMetric(BaseMetric):
 
 
 
-        stats_names = ["AP", "AP .5", "AP .75", "AP .95",
-                       "AR .5", "AR .75", "AR .95",
-                       "F1 .5", "F1 .75", "F1 .95"]
+        stats_names = ["AP",
+                       "AP .5",
+                       "AR .5",
+                       "F1 .5",
+                       "AP .75",
+                       "AR .75",
+                       "F1 .75",
+                       "AP .95",
+                       "AR .95",
+                       "F1 .95"]
         scores = [0, 0, 0, 0,
                   0, 0, 0,
                   0, 0, 0]
-        for (idx_, iou_threshold) in enumerate([0.5, 0.75, 0.95][0:1]):
+        for (idx_, iou_threshold) in enumerate([0.5, 0.75, 0.95]):
             tps = 0
             fps = 0
             fns = 0
@@ -635,7 +642,7 @@ class TowerMetric(BaseMetric):
                 gt_kt = [[]] * len(pred_kt)
                 for kt_idx, [x_, y_, type] in enumerate(gt['raw_ann_info'][0]['true_points_3']):
                     gt_kt[type - 1] = gt_kt[type - 1] + [[x_ , y_ , kt_idx]]
-                tp, fp, fn = ljw_tower_pose_pack_accuracy(pred_kt, copy.deepcopy(gt_kt), self.sigma * self.heatmap_scale * 4, iou_threshold=iou_threshold)
+                tp, fp, fn = ljw_tower_pose_pack_accuracy(pred_kt, copy.deepcopy(gt_kt), self.sigma * self.heatmap_scale * 2, iou_threshold=iou_threshold)
                 tps += tp
                 fps += fp
                 fns += fn
@@ -643,10 +650,10 @@ class TowerMetric(BaseMetric):
             precision = tps / max(1, (tps + fps))
             recall = tps / max(1, (tps + fns))
             f1_score = 2 * (precision * recall) / max(1e-4, (precision + recall))
-            scores[idx_ + 1 ] = precision
-            scores[idx_ +4] = recall
-            scores[idx_ +7] = f1_score
-        scores[0] =scores[1]
+            scores[idx_*3 + 1 ] = precision
+            scores[idx_ *3+2] = recall
+            scores[idx_*3 +3] = f1_score
+        scores[0] =scores[3]
         info_str = list(zip(stats_names, scores))
 
         # evaluation results
@@ -659,114 +666,7 @@ class TowerMetric(BaseMetric):
             tmp_dir.cleanup()
         return eval_results
 
-        #
-        #
-        # kpts = defaultdict(list)
-        #
-        # # group the preds by img_id
-        # for pred in preds:
-        #
-        #     img_id = pred['img_id']
-        #
-        #     if self.pred_converter is not None:
-        #         pred = transform_pred(pred,
-        #                               self.pred_converter['num_keypoints'],
-        #                               self.pred_converter['mapping'])
-        #
-        #     for idx, keypoints in enumerate(pred['keypoints']):
-        #
-        #         instance = {
-        #             'id': pred['id'],
-        #             'img_id': pred['img_id'],
-        #             'category_id': pred['category_id'],
-        #             'keypoints': keypoints,
-        #             'keypoint_scores': pred['keypoint_scores'][idx],
-        #             'bbox_score': pred['bbox_scores'][idx],
-        #         }
-        #         if 'bbox' in pred:
-        #             instance['bbox'] = pred['bbox'][idx]
-        #
-        #         if 'areas' in pred:
-        #             instance['area'] = pred['areas'][idx]
-        #         else:
-        #             # use keypoint to calculate bbox and get area
-        #             area = (
-        #                            np.max(keypoints[:, 0]) - np.min(keypoints[:, 0])) * (
-        #                            np.max(keypoints[:, 1]) - np.min(keypoints[:, 1]))
-        #             instance['area'] = area
-        #
-        #         kpts[img_id].append(instance)
-        #
-        # # sort keypoint results according to id and remove duplicate ones
-        # kpts = self._sort_and_unique_bboxes(kpts, key='id')
-        #
-        # # score the prediction results according to `score_mode`
-        # # and perform NMS according to `nms_mode`
-        # valid_kpts = defaultdict(list)
-        # if self.pred_converter is not None:
-        #     num_keypoints = self.pred_converter['num_keypoints']
-        # else:
-        #     num_keypoints = self.dataset_meta['num_keypoints']
-        # for img_id, instances in kpts.items():
-        #     for instance in instances:
-        #         # concatenate the keypoint coordinates and scores
-        #         instance['keypoints'] = np.concatenate([
-        #             instance['keypoints'], instance['keypoint_scores'][:, None]
-        #         ],
-        #             axis=-1)
-        #         if self.score_mode == 'bbox':
-        #             instance['score'] = instance['bbox_score']
-        #         elif self.score_mode == 'keypoint':
-        #             instance['score'] = np.mean(instance['keypoint_scores'])
-        #         else:
-        #             bbox_score = instance['bbox_score']
-        #             if self.score_mode == 'bbox_rle':
-        #                 keypoint_scores = instance['keypoint_scores']
-        #                 instance['score'] = float(bbox_score +
-        #                                           np.mean(keypoint_scores) +
-        #                                           np.max(keypoint_scores))
-        #
-        #             else:  # self.score_mode == 'bbox_keypoint':
-        #                 mean_kpt_score = 0
-        #                 valid_num = 0
-        #                 for kpt_idx in range(num_keypoints):
-        #                     kpt_score = instance['keypoint_scores'][kpt_idx]
-        #                     if kpt_score > self.keypoint_score_thr:
-        #                         mean_kpt_score += kpt_score
-        #                         valid_num += 1
-        #                 if valid_num != 0:
-        #                     mean_kpt_score /= valid_num
-        #                 instance['score'] = bbox_score * mean_kpt_score
-        #     # perform nms
-        #     if self.nms_mode == 'none':
-        #         valid_kpts[img_id] = instances
-        #     else:
-        #         nms = oks_nms if self.nms_mode == 'oks_nms' else soft_oks_nms
-        #         keep = nms(
-        #             instances,
-        #             self.nms_thr,
-        #             sigmas=self.dataset_meta['sigmas'])
-        #         valid_kpts[img_id] = [instances[_keep] for _keep in keep]
-        #
-        # # convert results to coco style and dump into a json file
-        # self.results2json(valid_kpts, outfile_prefix=outfile_prefix)
-        #
-        # # only format the results without doing quantitative evaluation
-        # if self.format_only:
-        #     logger.info('results are saved in '
-        #                 f'{osp.dirname(outfile_prefix)}')
-        #     return {}
-        #
-        # # evaluation results
-        # eval_results = OrderedDict()
-        # logger.info(f'Evaluating {self.__class__.__name__}...')
-        # info_str = self._do_python_keypoint_eval(outfile_prefix)
-        # name_value = OrderedDict(info_str)
-        # eval_results.update(name_value)
-        #
-        # if tmp_dir is not None:
-        #     tmp_dir.cleanup()
-        # return eval_results
+
 
     def results2json(self, keypoints: Dict[int, list],
                      outfile_prefix: str) -> str:

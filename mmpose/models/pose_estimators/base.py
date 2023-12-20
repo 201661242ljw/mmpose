@@ -161,6 +161,14 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
         elif mode == 'tensor':
             return self._forward(inputs)
         elif mode == 'LJW_show_heatmap_and_pafs':
+            if not True:
+            # if True:
+                if self.metainfo is not None:
+                    for data_sample in data_samples:
+                        data_sample.set_metainfo(self.metainfo)
+                return self.predict(inputs, data_samples)
+
+
             outputs = self._forward(inputs)
 
             bgr_colors = []
@@ -178,7 +186,7 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
                 img_name = os.path.basename(data_sample.img_path)
                 # if not "04_2_066_head_have_2_0" in img_name:
                 #     continue
-                save_dir = r"E:\LJW\Git\mmpose\tools\0_LJW_tools\predict_show_1024_temp_5/{}".format(
+                save_dir = r"E:\LJW\Git\mmpose\tools\0_LJW_tools\predict_show_1024_temp_7/{}".format(
                     img_name.split(".")[0])
                 if not os.path.exists(save_dir):
                     os.makedirs(save_dir)
@@ -221,7 +229,7 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
                 thre2 = 0.05
                 for part in range(heatmap_avg.shape[2]):
                     map_ori = heatmap_avg[:, :, part]
-                    one_heatmap = gaussian_filter(map_ori, sigma=1.5)
+                    one_heatmap = gaussian_filter(map_ori, sigma=2)
 
                     map_left = np.zeros(one_heatmap.shape)
                     map_left[1:, :] = one_heatmap[:-1, :]
@@ -392,11 +400,10 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
                         img = cv2.circle(img, center=(pt2_x, pt2_y), radius=5, color=pt_colors[pt2_type - 1],
                                          thickness=-1)
                         pt_drawn.append(pt2_id)
-                    img = cv2.line(img, (pt1_x, pt1_y), (pt2_x, pt2_y), thickness=1,
+                    img = cv2.line(img, (pt1_x, pt1_y), (pt2_x, pt2_y), thickness=2,
                                    color=sk_colores[skeleton_type - 1])
                 cv2.imwrite(os.path.join(save_dir, "0_show.jpg"), img)
                 # exit()
-
         else:
             raise RuntimeError(f'Invalid mode "{mode}". '
                                'Only supports loss, predict and tensor mode.')
