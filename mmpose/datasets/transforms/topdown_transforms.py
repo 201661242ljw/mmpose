@@ -426,9 +426,11 @@ class LJW_TopdownAffine_2(BaseTransform):
                     true_points[..., :2] = cv2.transform(true_points[..., :2], warp_mat)
                     results['raw_ann_info'][key_name] = true_points.astype(np.int32)[0].tolist()
                 if 'true_skeletons' in key_name:
+
                     true_skeletons = np.array([results['raw_ann_info'][key_name]], dtype=np.float32)
-                    true_skeletons[..., :2] = cv2.transform(true_skeletons[..., :2], warp_mat)
-                    true_skeletons[..., 3:5] = cv2.transform(true_skeletons[..., 3:5], warp_mat)
+                    if true_skeletons.shape[1] != 0:
+                        true_skeletons[..., :2] = cv2.transform(true_skeletons[..., :2], warp_mat)
+                        true_skeletons[..., 3:5] = cv2.transform(true_skeletons[..., 3:5], warp_mat)
                     results['raw_ann_info'][key_name] = true_skeletons.astype(np.int32)[0].tolist()
         results['input_size'] = (w, h)
         results['input_center'] = center

@@ -555,7 +555,7 @@ class LJWHeatmapAndPaf_2(BaseKeypointCodec):
                     p2y = int(p2y)
                     p2t = int(p2t)
 
-                    if skeleton_type in [4, 5, 10]:
+                    if skeleton_type in [6, 7, 8, 9, 18, 19, 20, 21]:
                         if p2x > p1x:
                             paf_bgs[paf_index:paf_index + 2] = get_PAF((p1x, p1y), (p2x, p2y),
                                                                        paf_bgs[paf_index:paf_index + 2],
@@ -682,7 +682,7 @@ class LJWHeatmapAndPaf_2(BaseKeypointCodec):
                     p2y = int(p2y)
                     p2t = int(p2t)
 
-                    if skeleton_type in [4, 5, 10]:
+                    if skeleton_type in [6, 7, 8, 9, 18, 19, 20, 21]:
                         if p2x > p1x:
                             paf_bgs[paf_index:paf_index + 2] = get_PAF((p1x, p1y), (p2x, p2y),
                                                                        paf_bgs[paf_index:paf_index + 2],

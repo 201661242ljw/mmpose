@@ -323,11 +323,11 @@ def ljw_tower_pose_pack_accuracy(output: list,
                 tps += tp
                 fps += fp
                 fns += fn
-
-    precision = tps / max(1, (tps + fps))
-    recall = tps / max(1, (tps + fns))
-    f1_score = 2 * (precision * recall) / max(1e-4, (precision + recall))
-    return f1_score, precision, recall
+    return tps, fps, fns
+    # precision = tps / max(1, (tps + fps))
+    # recall = tps / max(1, (tps + fns))
+    # f1_score = 2 * (precision * recall) / max(1e-4, (precision + recall))
+    # return f1_score, precision, recall
 
 
 def simcc_pck_accuracy(output: Tuple[np.ndarray, np.ndarray],

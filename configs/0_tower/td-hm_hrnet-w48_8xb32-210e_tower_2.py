@@ -2,10 +2,10 @@ _base_ = ['../../configs/_base_/default_runtime.py']
 
 heatmap_scale = 4
 
-batch_size = 2
+batch_size = 4
 
-input_size = 1024
-epoch_num = 210
+input_size = 768
+epoch_num = 100
 
 use_medium_satge = True
 target_form = 3
@@ -17,16 +17,16 @@ num_keypoints_1 = 5
 num_skeletons_1 = 5
 # --------------------------------
 output_form_2 = True
-sigma_2 = 4
+sigma_2 =  3
 paf_half_width_2 = 4
 num_keypoints_2 = 5
 num_skeletons_2 = 5
 # --------------------------------
 output_form_3 = True
-sigma_3 = 2
-paf_half_width_3 =2.5
-num_keypoints_3 = 5
-num_skeletons_3 = 22
+sigma_3 =  1.5
+paf_half_width_3 = 2
+num_keypoints_3 = 14
+num_skeletons_3 = 39
 # --------------------------------
 channel_labels = [
     [num_keypoints_1, num_skeletons_1, int(output_form_1), sigma_1],
@@ -153,7 +153,7 @@ model = dict(
         init_cfg=dict(
             type='Pretrained',
             checkpoint='https://download.openmmlab.com/mmpose/pretrain_models/hrnet_w48-8ef0771d.pth'),
-            # checkpoint=r'E:\LJW\Git\mmpose\tools\LJW_Log\2023-12-03_00-22-42\epoch_210.pth'),
+        # checkpoint=r'E:\LJW\Git\mmpose\tools\LJW_Log\2023-12-03_00-22-42\epoch_210.pth'),
     ),
     head=dict(
         type='LJW_HeatmapHead',
@@ -183,7 +183,7 @@ data_root = r'data/00_Tower_Dataset/{}/'.format(input_size)
 # pipelines
 train_pipeline = [
     dict(type='LJW_LoadImage'),
-    dict(type='GetBBoxCenterScale', padding=1.05),  # results['bbox_center'] = center    # results['bbox_scale'] = scale
+    dict(type='GetBBoxCenterScale', padding=1.1),  # results['bbox_center'] = center    # results['bbox_scale'] = scale
     dict(type='LJW_RandomFlip_2', direction='horizontal', prob=0.5),
     # results['bbox'],#results['bbox_center'] # results['keypoints'] = keypoints    #results['keypoints_visible'] = keypoints_visible
     # dict(type='RandomHalfBody'),
@@ -260,9 +260,9 @@ test_dataloader = dict(
 
 val_evaluator = dict(
     type='TowerMetric',
-    sigma = sigma_3,
+    sigma=sigma_3,
     ann_file=data_root + 'anns/tower_keypoints_val_2.json')
 test_evaluator = dict(
     type='TowerMetric',
-    sigma = sigma_3,
+    sigma=sigma_3,
     ann_file=data_root + 'anns/tower_keypoints_test_2.json')

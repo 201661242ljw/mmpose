@@ -243,7 +243,45 @@ class PackPoseInputs(BaseTransform):
 
         if not True:
         # if True:
-            ht_list = [0,1,2,3,4,15,16,17,18,19,30,31,32,33,34]
+            num_keypoints_1 = 5
+            num_skeletons_1 = 5
+            num_keypoints_2 = 5
+            num_skeletons_2 = 5
+            num_keypoints_3 = 14
+            num_skeletons_3 = 39
+            lst_2 = []
+            for i in range(num_keypoints_1):
+                lst_2.append(f"1_1_kt_{i + 1}")
+            for i in range(num_skeletons_1):
+                lst_2.append(f"1_1_sk_{i + 1}_x")
+                lst_2.append(f"1_1_sk_{i + 1}_y")
+
+            for i in range(num_keypoints_1):
+                lst_2.append(f"2_1_kt_{i + 1}")
+            for i in range(num_skeletons_1):
+                lst_2.append(f"2_1_sk_{i + 1}_x")
+                lst_2.append(f"2_1_sk_{i + 1}_y")
+            for i in range(num_keypoints_2):
+                lst_2.append(f"2_2_kt_{i + 1}")
+            for i in range(num_skeletons_2):
+                lst_2.append(f"2_2_sk_{i + 1}_x")
+                lst_2.append(f"2_2_sk_{i + 1}_y")
+
+            for i in range(num_keypoints_1):
+                lst_2.append(f"3_1_kt_{i + 1}")
+            for i in range(num_skeletons_1):
+                lst_2.append(f"3_1_sk_{i + 1}_x")
+                lst_2.append(f"3_1_sk_{i + 1}_y")
+            for i in range(num_keypoints_2):
+                lst_2.append(f"3_2_kt_{i + 1}")
+            for i in range(num_skeletons_2):
+                lst_2.append(f"3_2_sk_{i + 1}_x")
+                lst_2.append(f"3_2_sk_{i + 1}_y")
+            for i in range(num_keypoints_3):
+                lst_2.append(f"3_3_kt_{i + 1}")
+            for i in range(num_skeletons_3):
+                lst_2.append(f"3_3_sk_{i + 1}_x")
+                lst_2.append(f"3_3_sk_{i + 1}_y")
 
 
             img = (np.transpose(inputs_tensor.numpy(), (1, 2, 0))) // 2
@@ -252,16 +290,15 @@ class PackPoseInputs(BaseTransform):
             for ht_idx in range(hts.shape[0]):
                 ht = hts[ht_idx]
                 ht *= 255
-                if ht_idx in ht_list:
-                    ht = np.transpose(np.array([ht, ht, ht], dtype=np.uint8),(1, 2, 0))
-                    out_name = "{}_heatmap".format(ht_idx)
+                if 'kt' in lst_2[ht_idx] :
+                    ht = np.transpose(np.array([ht, ht, ht], dtype=np.uint8), (1, 2, 0))
                 else:
-                    ht = np.transpose( np.array([ht * 0, np.clip(-ht, 0, 255), np.clip(ht, 0, 255)], dtype=np.uint8),(1, 2, 0))
-                    out_name = "{}_paf".format(ht_idx)
+                    ht = np.transpose(np.array([ht * 0, np.clip(-ht, 0, 255), np.clip(ht, 0, 255)], dtype=np.uint8),
+                                      (1, 2, 0))
                 ht = cv2.resize(ht, (img.shape[1], img.shape[0]))
                 out = img * 0.25 + ht * 0.75
                 out = out.astype(np.uint8)
-                cv2.imwrite(r"E:\LJW\Git\mmpose\tools\0_LJW_tools\show\{}.jpg".format(out_name), out)
+                cv2.imwrite(r"E:\LJW\Git\mmpose\tools\0_LJW_tools\show\{}.jpg".format(lst_2[ht_idx]), out)
             exit()
 
         return packed_results

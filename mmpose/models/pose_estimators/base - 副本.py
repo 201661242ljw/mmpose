@@ -168,7 +168,6 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
                         data_sample.set_metainfo(self.metainfo)
                 return self.predict(inputs, data_samples)
 
-            outputs = self._forward(inputs)
             saturation = 1.0  # 最大饱和度
             value = 1.0  # 最大明度
 
@@ -189,6 +188,7 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
                 bgr_colors.append(bgr_color)
             pt_colors = bgr_colors
 
+            outputs = self._forward(inputs)
             for (idx, data_sample) in enumerate(data_samples):
                 img_name = os.path.basename(data_sample.img_path)
                 # if not "04_2_066_head_have_2_0" in img_name:
@@ -212,46 +212,15 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
                 sigma = 4
 
                 output = outputs[idx, :, :, :].detach().cpu().numpy()[-(sk_num * 2 + kt_num):]
-                heatmap_avg = output[:kt_num]
-                heatmap_avg = np.transpose(heatmap_avg, (1, 2, 0))
-                paf_avg = output[kt_num:]
-                paf_avg = np.transpose(paf_avg, (1, 2, 0))
-                heatmap_avg = cv2.resize(heatmap_avg, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_CUBIC)
-                paf_avg = cv2.resize(paf_avg, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_CUBIC)
-
                 all_peaks = []
                 peak_counter = 0
-                thre1 = 0.3
+                thre1 = 0.1
                 thre2 = 0.05
-
-                limbSeq = [
-                    [2, 0], [4, 1], [3, 0], [5, 1], [1, 0],
-                    [2, 2], [4, 4], [3, 3], [5, 5], [4, 2],
-                    [5, 3], [2, 3], [4, 5], [3, 2], [5, 4],
-                    [3, 5], [5, 5], [5, 5], [3, 3], [2, 2],
-                    [4, 4], [2, 6], [4, 7], [7, 6], [2, 8],
-                    [3, 8], [4, 9], [5, 9], [3, 8], [5, 9],
-                    [9, 8], [10, 0], [11, 0], [12, 1], [13, 1],
-                    [13, 11], [12, 10], [10, 11], [12, 13]
-                ]
-                mapIdx = [
-                    [0, 1], [2, 3], [4, 5], [6, 7], [8, 9],
-                    [10, 11], [12, 13], [14, 15], [16, 17], [18, 19],
-                    [20, 21], [22, 23], [24, 25], [26, 27], [28, 29],
-                    [30, 31], [32, 33], [34, 35], [36, 37], [38, 39],
-                    [40, 41], [42, 43], [44, 45], [46, 47], [48, 49],
-                    [50, 51], [52, 53], [54, 55], [56, 57], [58, 59],
-                    [60, 61], [62, 63], [64, 65], [66, 67], [68, 69],
-                    [70, 71], [72, 73], [74, 75], [76, 77]
-                ]
                 for i in range(output.shape[0]):
                     ht = output[i]
-                    r = np.clip(ht, 0, 1) * 255
-                    g = ht * 0
-                    b = np.clip(-ht, 0, 1) * 255
-                    ht = np.array([b, g, r], dtype=np.uint8).transpose(1, 2, 0)
+
                     if i < kt_num:
-                        map_ori = heatmap_avg[:, :, i]
+                        map_ori = ht
                         one_heatmap = gaussian_filter(map_ori, sigma=sigma)
 
                         map_left = np.zeros(one_heatmap.shape)
@@ -274,42 +243,24 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
                         all_peaks.append(peaks_with_score_and_id)
                         peak_counter += len(peaks)
 
-                        save_path = os.path.join(save_dir, "ht_{}_{}.jpg".format(i, len(peaks)))
+                        save_path = os.path.join(save_dir, "ht_{}_{}.jpg".format(i , len(peaks)))
                     else:
-                        save_path = os.path.join(save_dir, "paf_{}_{}_{}_{}.jpg".format(
-                            (i - kt_num) // 2 + 1,
-                            'xy'[(i - kt_num) % 2],
-                            limbSeq[(i - kt_num) // 2][0],
-                            limbSeq[(i - kt_num) // 2][1])
-                                                 )
-
+                        save_path = os.path.join(save_dir, "paf_{}_{}.jpg".format((i - kt_num) // 2 + 1, 'xy'[(i - kt_num) % 2]))
+                    r = np.clip(ht, 0, 1) * 255
+                    g = ht * 0
+                    b = np.clip(-ht, 0, 1) * 255
+                    ht = np.array([b, g, r], dtype=np.uint8).transpose(1, 2, 0)
                     ht = cv2.resize(ht, (img.shape[1], img.shape[0]))
-
                     cv2.imwrite(save_path, (ht * 0.75 + img * 0.25).astype(np.uint8))
 
+                heatmap_avg = output[:kt_num]
+                heatmap_avg = np.transpose(heatmap_avg, (1, 2, 0))
+                paf_avg = output[kt_num:]
+                paf_avg = np.transpose(paf_avg, (1, 2, 0))
+                heatmap_avg = cv2.resize(heatmap_avg, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_CUBIC)
+                paf_avg = cv2.resize(paf_avg, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_CUBIC)
+
                 # for part in range(heatmap_avg.shape[2]):
-                #     map_ori = heatmap_avg[:, :, part]
-                #     one_heatmap = gaussian_filter(map_ori, sigma=sigma)
-                #
-                #     map_left = np.zeros(one_heatmap.shape)
-                #     map_left[1:, :] = one_heatmap[:-1, :]
-                #     map_right = np.zeros(one_heatmap.shape)
-                #     map_right[:-1, :] = one_heatmap[1:, :]
-                #     map_up = np.zeros(one_heatmap.shape)
-                #     map_up[:, 1:] = one_heatmap[:, :-1]
-                #     map_down = np.zeros(one_heatmap.shape)
-                #     map_down[:, :-1] = one_heatmap[:, 1:]
-                #
-                #     peaks_binary = np.logical_and.reduce(
-                #         (one_heatmap >= map_left, one_heatmap >= map_right, one_heatmap >= map_up,
-                #          one_heatmap >= map_down, one_heatmap > thre1))
-                #     peaks = list(zip(np.nonzero(peaks_binary)[1], np.nonzero(peaks_binary)[0]))  # note reverse
-                #     peaks_with_score = [x + (map_ori[x[1], x[0]],) for x in peaks]
-                #     peak_id = range(peak_counter, peak_counter + len(peaks))
-                #     peaks_with_score_and_id = [peaks_with_score[i] + (peak_id[i],) for i in range(len(peak_id))]
-                #
-                #     all_peaks.append(peaks_with_score_and_id)
-                #     peak_counter += len(peaks)
 
                 pt_img = copy.deepcopy(img)
                 pt_img = pt_img // 4
@@ -317,32 +268,43 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
                     for pt in all_peak:
                         x = pt[0]
                         y = pt[1]
-                        pt_img = cv2.circle(pt_img, center=(x, y), color=pt_color, radius=5, thickness=-1)
+                        pt_img = cv2.circle(pt_img, center=(x * 4, y* 4), color=pt_color, radius=5, thickness=-1)
 
                 save_path = os.path.join(save_dir, "0_pts.jpg")
 
                 cv2.imwrite(save_path, pt_img)
 
+                limbSeq = [
+                    [2, 0], [4, 1], [3, 0], [5, 1], [1, 0],
+                    [2, 2], [4, 4], [3, 3], [5, 5], [4, 2],
+                    [5, 3], [2, 3], [4, 5], [3, 2], [5, 4],
+                    [3, 5], [5, 5], [5, 5], [3, 3], [2, 2],
+                    [4, 4], [2, 6], [4, 7], [7, 6], [2, 8],
+                    [3, 8], [4, 9], [5, 9], [3, 8], [5, 9],
+                    [9, 8], [10, 0], [11, 0], [12, 1], [13, 1],
+                    [13, 11], [12, 10], [10, 11], [12, 13]
+
+                ]
+                mapIdx = [
+                    [0, 1], [2, 3], [4, 5], [6, 7], [8, 9],
+                    [10, 11], [12, 13], [14, 15], [16, 17], [18, 19],
+                    [20, 21], [22, 23], [24, 25], [26, 27], [28, 29],
+                    [30, 31], [32, 33], [34, 35], [36, 37], [38, 39],
+                    [40, 41], [42, 43], [44, 45], [46, 47], [48, 49],
+                    [50, 51], [52, 53], [54, 55], [56, 57], [58, 59],
+                    [60, 61], [62, 63], [64, 65], [66, 67], [68, 69],
+                    [70, 71], [72, 73], [74, 75], [76, 77]
+                ]
+
                 connection_all = []
                 special_connection = []
+                # special_k = []
                 mid_num = 10
 
                 for k in range(len(mapIdx)):
                     score_mid = paf_avg[:, :, [x for x in mapIdx[k]]]
-
-                    p1_index = limbSeq[k][0]
-                    p2_index = limbSeq[k][1]
-                    # if p1_index == 0:
-                    #     p1_index = 13
-                    # else:
-                    #     p1_index -= 1
-                    # if p2_index == 0:
-                    #     p2_index = 13
-                    # else:
-                    #     p2_index -= 1
-
-                    candA = all_peaks[p1_index]
-                    candB = all_peaks[p2_index]
+                    candA = all_peaks[limbSeq[k][0]]
+                    candB = all_peaks[limbSeq[k][1]]
                     nA = len(candA)
                     nB = len(candB)
 
@@ -415,7 +377,7 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
                     img = cv2.line(img, (pt1_x, pt1_y), (pt2_x, pt2_y), thickness=2,
                                    color=sk_colors[skeleton_type - 1])
                 cv2.imwrite(os.path.join(save_dir, "0_show.jpg"), img)
-            exit()
+                exit()
         else:
             raise RuntimeError(f'Invalid mode "{mode}". '
                                'Only supports loss, predict and tensor mode.')

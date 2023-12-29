@@ -59,7 +59,8 @@ def flip_keypoints(keypoints: np.ndarray,
     # flip the keypoints
     w, h = image_size
     if direction == 'horizontal':
-        keypoints[..., 0] = w - 1 - keypoints[..., 0]
+        if keypoints.shape[1] != 0:
+            keypoints[..., 0] = w - 1 - keypoints[..., 0]
     elif direction == 'vertical':
         keypoints[..., 1] = h - 1 - keypoints[..., 1]
     else:

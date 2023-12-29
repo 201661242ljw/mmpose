@@ -1216,7 +1216,7 @@ def get_complex_skeletons():
                 [[14, 14], [24, 24], [34, 34], [43, 43]]
             ],
             "name_pairs": [
-                [["sk_5", "bl_1"], ["sk_5", "bl_2"]]
+                [["sk_5", "bl_1"], ["sk_6", "bl_2"]]
             ]
         },
         {
@@ -1315,7 +1315,7 @@ def get_complex_skeletons():
                 [[23, 23]]
             ],
             "name_pairs": [
-                [["ssk_4", "e_1"], ["ssk_3", "ssk_2"]]
+                [["ssk_4", "ssk_1"], ["ssk_3", "ssk_2"]]
             ]
         },
         {
@@ -1362,8 +1362,39 @@ def get_complex_skeletons():
             print(skeleton_type)
             print("-----------------------")
 
-
     book.save(r"new_points.xlsx")
+
+
+def get_sk_ids():
+    book = openpyxl.load_workbook(r"new_points.xlsx")
+    pt_2_type = {}
+    rom_num = 2
+
+    sk_kt_channels = [[]] * 39
+    sk_channels = []
+    sh = book['Sheet6']
+    while sh[f'A{rom_num}'].value != None:
+        pt_2_type[sh[f'A{rom_num}'].value] = sh[f'B{rom_num}'].value - 1
+        rom_num += 1
+
+    sh = book['Sheet7']
+    rom_num = 2
+    while sh[f'A{rom_num}'].value != None:
+        p1_name = sh[f'A{rom_num}'].value
+        p2_name = sh[f'B{rom_num}'].value
+        sk_type = sh[f'C{rom_num}'].value
+        if sk_kt_channels[sk_type - 1] == []:
+            sk_kt_channels[sk_type - 1] = [pt_2_type[p1_name], pt_2_type[p2_name]]
+        else:
+            if not sk_kt_channels[sk_type - 1] == [pt_2_type[p1_name], pt_2_type[p2_name]]:
+                print(p1_name, pt_2_type[p1_name], p2_name, pt_2_type[p2_name], sk_type)
+                exit()
+        rom_num += 1
+    for i in range(39):
+        sk_channels.append([i * 2, i * 2 + 1])
+    print(sk_kt_channels)
+    print(sk_channels)
+    a = 1
 
 
 if __name__ == '__main__':
@@ -1396,7 +1427,8 @@ if __name__ == '__main__':
         bgr_colors.append(bgr_color)
     pt_colors = bgr_colors
 
-    get_complex_skeletons()
-    main()
-    step2()
-    get_sample()
+    # get_complex_skeletons()
+    # main()
+    # step2()
+    # get_sample()
+    get_sk_ids()
