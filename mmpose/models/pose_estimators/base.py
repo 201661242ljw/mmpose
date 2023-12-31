@@ -193,7 +193,7 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
                 img_name = os.path.basename(data_sample.img_path)
                 # if not "04_2_066_head_have_2_0" in img_name:
                 #     continue
-                save_dir = r"E:\LJW\Git\mmpose\tools\0_LJW_tools\predict_show_1024_temp_20231229/{}".format(
+                save_dir = r"E:\LJW\Git\mmpose\tools\0_LJW_tools\predict_show_1024_temp_20231230/{}".format(
                     img_name.split(".")[0])
                 if not os.path.exists(save_dir):
                     os.makedirs(save_dir)
@@ -221,7 +221,7 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
 
                 all_peaks = []
                 peak_counter = 0
-                thre1 = 0.3
+                thre1 = 0.1
                 thre2 = 0.05
 
                 limbSeq = [
@@ -415,7 +415,7 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
                     img = cv2.line(img, (pt1_x, pt1_y), (pt2_x, pt2_y), thickness=2,
                                    color=sk_colors[skeleton_type - 1])
                 cv2.imwrite(os.path.join(save_dir, "0_show.jpg"), img)
-            exit()
+            # exit()
         else:
             raise RuntimeError(f'Invalid mode "{mode}". '
                                'Only supports loss, predict and tensor mode.')

@@ -832,7 +832,7 @@ class LJW_HeatmapHead(BaseHead):
                         pred_fields[:, channel_num:channel_num + k_3_3, :, :],
                         gt_heatmaps[:, channel_num:channel_num + k_3_3, :, :],
                         keypoint_weights[:, channel_num:channel_num + k_3_3]
-                    )
+                    )*3
                 )
             channel_num += k_3_3
             if channel_num + s_3_3 > channel_num:
@@ -841,7 +841,7 @@ class LJW_HeatmapHead(BaseHead):
                         pred_fields[:, channel_num:channel_num + s_3_3, :, :],
                         gt_heatmaps[:, channel_num:channel_num + s_3_3, :, :],
                         keypoint_weights[:, channel_num:channel_num + s_3_3]
-                    )
+                    )*3
                 )
             channel_num += s_3_3
             # ----------------------------------------------------------------------------------------------------
@@ -929,10 +929,10 @@ class LJW_HeatmapHead(BaseHead):
                         for kt_idx, [x_, y_, type] in enumerate(x.raw_ann_info['true_points_1']):
                             temp_list[type - 1] = temp_list[type - 1] + [
                                 [x_ // self.heatmap_scale, y_ // self.heatmap_scale, kt_idx]]
-                        temp_gt_kts.append(temp_list)
+                        # temp_gt_kts.append(temp_list)
 
-                        pred_pt = output[idx, :kt_length_1, :, :]
-                        temp_pred_kts.append(get_all_peaks(pred_pt, sigma=3))
+                        # pred_pt = output[idx, :kt_length_1, :, :]
+                        # temp_pred_kts.append(get_all_peaks(pred_pt, sigma=3))
                     if self.output_form_2:
                         kt_length_2 = self.channel_labels[1][0]
                         paf_length_2 = self.channel_labels[1][1] * 2
@@ -941,10 +941,10 @@ class LJW_HeatmapHead(BaseHead):
                         for kt_idx, [x_, y_, type] in enumerate(x.raw_ann_info['true_points_2']):
                             temp_list[type - 1] = temp_list[type - 1] + [
                                 [x_ // self.heatmap_scale, y_ // self.heatmap_scale, kt_idx]]
-                        temp_gt_kts.append(temp_list)
-
-                        pred_pt = output[idx, kt_length_1 + paf_length_1:kt_length_1 + paf_length_1 + kt_length_2, :, :]
-                        temp_pred_kts.append(get_all_peaks(pred_pt, sigma=2))
+                        # temp_gt_kts.append(temp_list)
+                        #
+                        # pred_pt = output[idx, kt_length_1 + paf_length_1:kt_length_1 + paf_length_1 + kt_length_2, :, :]
+                        # temp_pred_kts.append(get_all_peaks(pred_pt, sigma=2))
                     if self.output_form_3:
                         kt_length_3 = self.channel_labels[2][0]
                         paf_length_3 = self.channel_labels[2][1] * 2
@@ -958,7 +958,7 @@ class LJW_HeatmapHead(BaseHead):
                         pred_pt = output[idx,
                                   kt_length_1 + paf_length_1 + kt_length_2 + paf_length_2:kt_length_1 + paf_length_1 + kt_length_2 + paf_length_2 + kt_length_3,
                                   :, :]
-                        temp_pred_kts.append(get_all_peaks(pred_pt, sigma=2))
+                        temp_pred_kts.append(get_all_peaks(pred_pt, sigma=1.5))
                 else:
                     kt_lengths = [kt_length_1, kt_length_2, kt_length_3]
                     kt_lengths[self.target_form - 1] = self.channel_labels[0][0]

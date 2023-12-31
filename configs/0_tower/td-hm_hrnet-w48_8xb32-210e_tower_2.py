@@ -2,9 +2,9 @@ _base_ = ['../../configs/_base_/default_runtime.py']
 
 heatmap_scale = 4
 
-batch_size = 4
+batch_size = 2
 
-input_size = 768
+input_size = 1024
 epoch_num = 100
 
 use_medium_satge = True
@@ -12,19 +12,19 @@ target_form = 3
 # --------------------------------
 output_form_1 = True
 sigma_1 = 6
-paf_half_width_1 = 6
+paf_half_width_1 = 7.5
 num_keypoints_1 = 5
 num_skeletons_1 = 5
 # --------------------------------
 output_form_2 = True
 sigma_2 =  3
-paf_half_width_2 = 4
+paf_half_width_2 = 4.5
 num_keypoints_2 = 5
 num_skeletons_2 = 5
 # --------------------------------
 output_form_3 = True
 sigma_3 =  1.5
-paf_half_width_3 = 2
+paf_half_width_3 = 1.5
 num_keypoints_3 = 14
 num_skeletons_3 = 39
 # --------------------------------
@@ -44,7 +44,7 @@ else:
     channel_labels = [channel_labels[target_form - 1]]
     channel_labels[0][2] = 1
 # runtime
-train_cfg = dict(max_epochs=epoch_num, val_interval=5)
+train_cfg = dict(max_epochs=epoch_num, val_interval=1)
 
 # optimizer
 optim_wrapper = dict(optimizer=dict(
