@@ -237,30 +237,30 @@ def main():
                                 new_point_names.append("4_2_sk_5")
                                 new_xs.append(x)
                                 new_ys.append(y)
-                                new_types.append(3)
+                                new_types.append(4)
                                 temp_data[image_name][f'new_keypoints_{sheet_order}'].append(
-                                    ["4_2_sk_5", x, y, 3])
+                                    ["4_2_sk_5", x, y, 4])
                             if new_point_name == "4_2_sk_2":
                                 new_point_names.append("4_2_sk_6")
                                 new_xs.append(x)
                                 new_ys.append(y)
-                                new_types.append(3)
+                                new_types.append(4)
                                 temp_data[image_name][f'new_keypoints_{sheet_order}'].append(
-                                    ["4_2_sk_6", x, y, 3])
+                                    ["4_2_sk_6", x, y, 4])
                             if new_point_name == "4_2_sk_3":
                                 new_point_names.append("4_2_sk_7")
                                 new_xs.append(x)
                                 new_ys.append(y)
-                                new_types.append(5)
+                                new_types.append(6)
                                 temp_data[image_name][f'new_keypoints_{sheet_order}'].append(
-                                    ["4_2_sk_7", x, y, 5])
+                                    ["4_2_sk_7", x, y, 6])
                             if new_point_name == "4_2_sk_4":
                                 new_point_names.append("4_2_sk_8")
                                 new_xs.append(x)
                                 new_ys.append(y)
-                                new_types.append(5)
+                                new_types.append(6)
                                 temp_data[image_name][f'new_keypoints_{sheet_order}'].append(
-                                    ["4_2_sk_8", x, y, 5])
+                                    ["4_2_sk_8", x, y, 6])
                     # skeleton
                     for (_, temp_dict) in skeleton_data.items():
                         p1 = temp_dict['p1']
@@ -1243,9 +1243,9 @@ if __name__ == '__main__':
         bgr_colors.append(bgr_color)
     pt_colors = bgr_colors
 
-    # get_complex_skeletons()
-    # main()
-    # step2()
+    get_complex_skeletons()
+    main()
+    step2()
     get_finale_ann()
     # get_only_one_sample()
     # get_sample()

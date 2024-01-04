@@ -1,5 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from typing import Optional, Tuple
+
+import cv2
 import torch
 import numpy as np
 
@@ -883,14 +885,19 @@ class LJWHeatmapAndPaf_2(BaseKeypointCodec):
         for [x, y, keypoint_type] in keypoints_2:
             keypoint_type = keypoint_type
             left = int(max(0, x // self.heatmap_scale[1] - 3 * self.sigma_2))
-            right = int(min(self.heatmap_size[3] // 2, x // self.heatmap_scale[1] + 3 * self.sigma_2))
+            right = int(min(self.heatmap_size[3] , x // self.heatmap_scale[1] + 3 * self.sigma_2))
             lower = int(max(0, y // self.heatmap_scale[1] - 3 * self.sigma_2))
-            upper = int(min(self.heatmap_size[2] // 2, y // self.heatmap_scale[1] + 3 * self.sigma_2))
+            upper = int(min(self.heatmap_size[2], y // self.heatmap_scale[1] + 3 * self.sigma_2))
             heatmap = np.zeros([self.heatmap_size[3], self.heatmap_size[2]])
             heatmap[lower: upper, left:right] = np.exp(-((xx - x / self.heatmap_scale[1]) ** 2 + (
                     yy - y / self.heatmap_scale[1]) ** 2) / 2 / self.sigma_2 / self.sigma_2)[lower: upper,
                                                 left:right]
             bgs[keypoint_type - 1][lower: upper, left:right] += heatmap[lower: upper, left:right]
+
+        # for bg_idx, bg in enumerate(bgs):
+        #     bg *= 255
+        #     bg = bg.astype(np.uint8)
+        #     cv2.imwrite(r"E:\LJW\Git\mmpose\tools\0_LJW_tools\show\_{}.jpg".format(bg_idx), img=bg)
 
         for [p1x, p1y, p1t, p2x, p2y, p2t, skeleton_type] in skeletons_2:
             paf_index = (skeleton_type - 1) * 2

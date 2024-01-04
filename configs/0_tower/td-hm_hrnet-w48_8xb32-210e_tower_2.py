@@ -26,8 +26,8 @@ num_skeletons_2 = 5
 # --------------------------------
 # --------------------------------
 output_form_3 = True
-sigma_3 = 1
-paf_half_width_3 = 1.5
+sigma_3 = 1.5
+paf_half_width_3 = 2
 num_keypoints_3 = 14
 num_skeletons_3 = 39
 # --------------------------------
