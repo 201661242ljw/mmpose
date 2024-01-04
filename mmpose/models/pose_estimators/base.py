@@ -168,7 +168,7 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
                         data_sample.set_metainfo(self.metainfo)
                 return self.predict(inputs, data_samples)
 
-            outputs = self._forward(inputs)
+            outputs = self._forward(inputs)[2]
             saturation = 1.0  # 最大饱和度
             value = 1.0  # 最大明度
 
@@ -193,7 +193,8 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
                 img_name = os.path.basename(data_sample.img_path)
                 # if not "04_2_066_head_have_2_0" in img_name:
                 #     continue
-                save_dir = r"E:\LJW\Git\mmpose\tools\0_LJW_tools\predict_show_1024_temp_20231230/{}".format(
+                save_dir = r"E:\LJW\Git\mmpose\tools\0_LJW_tools\predict_show\{}/{}".format(
+                    open(r"E:\LJW\Git\mmpose\tools\save_dir.txt", "r", encoding="utf-8").read().strip(),
                     img_name.split(".")[0])
                 if not os.path.exists(save_dir):
                     os.makedirs(save_dir)

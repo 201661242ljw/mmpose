@@ -5,7 +5,7 @@ import numpy as np
 
 from mmpose.codecs.utils import get_heatmap_maximum, get_simcc_maximum
 from .mesh_eval import compute_similarity_transform
-
+from mmpose.utils import  ljw_tower_pose_pack_accuracy
 
 def _calc_distances(preds: np.ndarray, gts: np.ndarray, mask: np.ndarray,
                     norm_factor: np.ndarray) -> np.ndarray:
@@ -236,98 +236,6 @@ def pose_pck_accuracy(output: np.ndarray,
     return keypoint_pck_accuracy(pred, gt, mask, thr, normalize)
 
 
-def calculate_precision_recall(detections, ground_truths, sigma, iou_threshold=0.5):
-    tp = 0
-    fp = 0
-
-    for detection in detections:
-        max_iou = 0
-        max_gt = None
-
-        for ground_truth in ground_truths:
-            iou = calculate_iou_like(detection, ground_truth, sigma)
-
-            if iou > max_iou:
-                max_iou = iou
-                max_gt = ground_truth
-
-        if max_iou >= iou_threshold:
-            tp += 1
-            ground_truths.remove(max_gt)
-        else:
-            fp += 1
-
-    fn = len(ground_truths)
-
-    return tp, fp, fn
-    # precision = tp / (tp + fp)
-    # recall = tp / (tp + fn)
-    #
-    #
-    # return precision, recall
-
-
-def calculate_iou_like(kt1, kt2, sigma):
-    [x1, y1, _, _] = kt1
-    [x2, y2, _] = kt2
-
-    w1 = w2 = h1 = h2 = int(sigma * 3)
-
-    left = max(x1, x2)
-    top = max(y1, y2)
-    right = min(x1 + w1, x2 + w2)
-    bottom = min(y1 + h1, y2 + h2)
-
-    if right > left and bottom > top:
-        intersection = (right - left) * (bottom - top)
-        union = w1 * h1 + w2 * h2 - intersection
-        return intersection / union
-    else:
-        return 0.0
-
-
-def calculate_iou(box1, box2):
-    x1, y1, w1, h1 = box1
-    x2, y2, w2, h2 = box2
-
-    left = max(x1, x2)
-    top = max(y1, y2)
-    right = min(x1 + w1, x2 + w2)
-    bottom = min(y1 + h1, y2 + h2)
-
-    if right > left and bottom > top:
-        intersection = (right - left) * (bottom - top)
-        union = w1 * h1 + w2 * h2 - intersection
-        return intersection / union
-    else:
-        return 0.0
-
-
-def ljw_tower_pose_pack_accuracy(output: list,
-                                 target: list,
-                                 channel_labels: list) -> tuple:
-    # N, K, H, W = output.shape
-
-    tps = 0
-    fps = 0
-    fns = 0
-    for (output_sample, target_sample) in zip(output, target):
-        idx = 0
-        for (output_form, target_form, channel_label) in zip(output_sample, target_sample, channel_labels):
-            idx += 1
-            if idx != len(output_sample):
-                continue
-            sigma = channel_label[3] * 2
-            for (output_kt_type, target_kt_type) in zip(output_form, target_form):
-                tp, fp, fn = calculate_precision_recall(output_kt_type, target_kt_type, sigma)
-                tps += tp
-                fps += fp
-                fns += fn
-    return tps, fps, fns
-    # precision = tps / max(1, (tps + fps))
-    # recall = tps / max(1, (tps + fns))
-    # f1_score = 2 * (precision * recall) / max(1e-4, (precision + recall))
-    # return f1_score, precision, recall
 
 
 def simcc_pck_accuracy(output: Tuple[np.ndarray, np.ndarray],

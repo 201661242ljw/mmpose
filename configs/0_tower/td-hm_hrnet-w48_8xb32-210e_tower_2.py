@@ -1,6 +1,6 @@
 _base_ = ['../../configs/_base_/default_runtime.py']
 
-heatmap_scale = 4
+heatmap_scale = [16, 8, 4]
 
 batch_size = 2
 
@@ -10,23 +10,27 @@ epoch_num = 100
 use_medium_satge = True
 target_form = 3
 # --------------------------------
+# --------------------------------
 output_form_1 = True
-sigma_1 = 6
-paf_half_width_1 = 7.5
+sigma_1 = 2
+paf_half_width_1 = 2.5
 num_keypoints_1 = 5
 num_skeletons_1 = 5
 # --------------------------------
+# --------------------------------
 output_form_2 = True
-sigma_2 =  3
-paf_half_width_2 = 4.5
+sigma_2 = 2
+paf_half_width_2 = 3
 num_keypoints_2 = 5
 num_skeletons_2 = 5
 # --------------------------------
+# --------------------------------
 output_form_3 = True
-sigma_3 =  1.5
+sigma_3 = 1
 paf_half_width_3 = 1.5
 num_keypoints_3 = 14
 num_skeletons_3 = 39
+# --------------------------------
 # --------------------------------
 channel_labels = [
     [num_keypoints_1, num_skeletons_1, int(output_form_1), sigma_1],
@@ -80,7 +84,14 @@ default_hooks = dict(checkpoint=dict(save_best='coco/AP', rule='greater'))
 codec = dict(
     type='LJWHeatmapAndPaf_2',
     input_size=(input_size, input_size),
-    heatmap_size=(input_size // heatmap_scale, input_size // heatmap_scale),
+    heatmap_size=(
+        input_size // heatmap_scale[0],
+        input_size // heatmap_scale[0],
+        input_size // heatmap_scale[1],
+        input_size // heatmap_scale[1],
+        input_size // heatmap_scale[2],
+        input_size // heatmap_scale[2]
+    ),
     heatmap_scale=heatmap_scale,
     use_medium_satge=use_medium_satge,
     target_form=target_form,
@@ -113,18 +124,8 @@ model = dict(
         std=[58.395, 57.12, 57.375],
         bgr_to_rgb=True),
     backbone=dict(
-        type='HRNet_LJW',
+        type='HRNet',
         in_channels=3,
-        use_medium_satge=use_medium_satge,
-        output_form_1=output_form_1,
-        output_form_2=output_form_2,
-        output_form_3=output_form_3,
-        num_keypoints_1=num_keypoints_1,
-        num_skeletons_1=num_skeletons_1,
-        num_keypoints_2=num_keypoints_2,
-        num_skeletons_2=num_skeletons_2,
-        num_keypoints_3=num_keypoints_3,
-        num_skeletons_3=num_skeletons_3,
         extra=dict(
             stage1=dict(
                 num_modules=1,
@@ -149,12 +150,58 @@ model = dict(
                 num_branches=4,
                 block='BASIC',
                 num_blocks=(4, 4, 4, 4),
-                num_channels=(48, 96, 192, 384))),
+                num_channels=(48, 96, 192, 384),
+                multiscale_output=True)),
         init_cfg=dict(
             type='Pretrained',
-            checkpoint='https://download.openmmlab.com/mmpose/pretrain_models/hrnet_w48-8ef0771d.pth'),
-        # checkpoint=r'E:\LJW\Git\mmpose\tools\LJW_Log\2023-12-03_00-22-42\epoch_210.pth'),
+            checkpoint='https://download.openmmlab.com/mmpose/pretrain_models/hrnet_w48-8ef0771d.pth',
+            # checkpoint=''
+        ),
     ),
+    # backbone=dict(
+    #     type='HRNet_LJW',
+    #     in_channels=3,
+    #     use_medium_satge=use_medium_satge,
+    #     output_form_1=output_form_1,
+    #     output_form_2=output_form_2,
+    #     output_form_3=output_form_3,
+    #     num_keypoints_1=num_keypoints_1,
+    #     num_skeletons_1=num_skeletons_1,
+    #     num_keypoints_2=num_keypoints_2,
+    #     num_skeletons_2=num_skeletons_2,
+    #     num_keypoints_3=num_keypoints_3,
+    #     num_skeletons_3=num_skeletons_3,
+    #     extra=dict(
+    #         stage1=dict(
+    #             num_modules=1,
+    #             num_branches=1,
+    #             block='BOTTLENECK',
+    #             num_blocks=(4,),
+    #             num_channels=(64,)),
+    #         stage2=dict(
+    #             num_modules=1,
+    #             num_branches=2,
+    #             block='BASIC',
+    #             num_blocks=(4, 4),
+    #             num_channels=(48, 96)),
+    #         stage3=dict(
+    #             num_modules=4,
+    #             num_branches=3,
+    #             block='BASIC',
+    #             num_blocks=(4, 4, 4),
+    #             num_channels=(48, 96, 192)),
+    #         stage4=dict(
+    #             num_modules=3,
+    #             num_branches=4,
+    #             block='BASIC',
+    #             num_blocks=(4, 4, 4, 4),
+    #             num_channels=(48, 96, 192, 384),
+    #             multiscale_output=True)),
+    #     init_cfg=dict(
+    #         type='Pretrained',
+    #         checkpoint='https://download.openmmlab.com/mmpose/pretrain_models/hrnet_w48-8ef0771d.pth'),
+    #     # checkpoint=r'E:\LJW\Git\mmpose\tools\LJW_Log\2023-12-03_00-22-42\epoch_210.pth'),
+    # ),
     head=dict(
         type='LJW_HeatmapHead',
         use_medium_satge=use_medium_satge,

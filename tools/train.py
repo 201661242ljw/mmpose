@@ -19,7 +19,7 @@ def parse_args():
     parser.add_argument('--work-dir', help='the dir to save logs and models', default=out_dir)
     parser.add_argument(
         '--resume',
-        # default=r"E:\LJW\Git\mmpose\tools\LJW_Log\2023-12-15_22-35-48\best_coco_AP_epoch_30.pth",
+        default=r"E:\LJW\Git\mmpose\tools\LJW_Log\2024-01-04_11-20-27\epoch_30.pth",
         nargs='?',
         type=str,
         const='auto',

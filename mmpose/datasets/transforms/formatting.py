@@ -124,9 +124,13 @@ class PackPoseInputs(BaseTransform):
     # used for computing losses
     field_mapping_table = dict(
         heatmaps='heatmaps',
+        heatmap_weights='heatmap_weights',
+        # heatmaps_1='heatmaps_1',
+        # heatmap_weights_1='heatmap_weights_1',
+        # heatmaps_2='heatmaps_2',
+        # heatmap_weights_2='heatmap_weights_2',
         instance_heatmaps='instance_heatmaps',
         heatmap_mask='heatmap_mask',
-        heatmap_weights='heatmap_weights',
         displacements='displacements',
         displacement_weights='displacement_weights')
 
@@ -142,7 +146,8 @@ class PackPoseInputs(BaseTransform):
                  meta_keys=('id', 'img_id', 'img_path', 'category_id',
                             'crowd_index', 'ori_shape', 'img_shape',
                             'input_size', 'input_center', 'input_scale',
-                            'flip', 'flip_direction', 'flip_indices',
+                            'flip', 'flip_direction', 'flip_indices', "heatmaps_1", "heatmaps_2", "heatmaps_3",
+                            "keypoint_weights_1", "keypoint_weights_2", "keypoint_weights_3",
                             'raw_ann_info', 'dataset_name'),
                  pack_transformed=False):
         self.meta_keys = meta_keys
@@ -237,6 +242,13 @@ class PackPoseInputs(BaseTransform):
         img_meta = {k: results[k] for k in self.meta_keys if k in results}
         data_sample.set_metainfo(img_meta)
 
+        # data_sample.heatmaps_1 = torch.from_numpy(data_sample.heatmaps_1)
+        # data_sample.heatmaps_2 = torch.from_numpy(data_sample.heatmaps_2)
+        # data_sample.heatmaps_3 = torch.from_numpy(data_sample.heatmaps_3)
+        # data_sample.keypoint_weights_1 = torch.from_numpy(data_sample.keypoint_weights_1)
+        # data_sample.keypoint_weights_2 = torch.from_numpy(data_sample.keypoint_weights_2)
+        # data_sample.keypoint_weights_3 = torch.from_numpy(data_sample.keypoint_weights_3)
+
         packed_results = dict()
         packed_results['inputs'] = inputs_tensor
         packed_results['data_samples'] = data_sample
@@ -250,55 +262,43 @@ class PackPoseInputs(BaseTransform):
             num_keypoints_3 = 14
             num_skeletons_3 = 39
             lst_2 = []
-            for i in range(num_keypoints_1):
-                lst_2.append(f"1_1_kt_{i + 1}")
-            for i in range(num_skeletons_1):
-                lst_2.append(f"1_1_sk_{i + 1}_x")
-                lst_2.append(f"1_1_sk_{i + 1}_y")
 
             for i in range(num_keypoints_1):
-                lst_2.append(f"2_1_kt_{i + 1}")
+                lst_2.append(f"1_kt_{i + 1}")
             for i in range(num_skeletons_1):
-                lst_2.append(f"2_1_sk_{i + 1}_x")
-                lst_2.append(f"2_1_sk_{i + 1}_y")
+                lst_2.append(f"1_sk_{i + 1}_x")
+                lst_2.append(f"1_sk_{i + 1}_y")
             for i in range(num_keypoints_2):
-                lst_2.append(f"2_2_kt_{i + 1}")
+                lst_2.append(f"2_kt_{i + 1}")
             for i in range(num_skeletons_2):
-                lst_2.append(f"2_2_sk_{i + 1}_x")
-                lst_2.append(f"2_2_sk_{i + 1}_y")
-
-            for i in range(num_keypoints_1):
-                lst_2.append(f"3_1_kt_{i + 1}")
-            for i in range(num_skeletons_1):
-                lst_2.append(f"3_1_sk_{i + 1}_x")
-                lst_2.append(f"3_1_sk_{i + 1}_y")
-            for i in range(num_keypoints_2):
-                lst_2.append(f"3_2_kt_{i + 1}")
-            for i in range(num_skeletons_2):
-                lst_2.append(f"3_2_sk_{i + 1}_x")
-                lst_2.append(f"3_2_sk_{i + 1}_y")
+                lst_2.append(f"2_sk_{i + 1}_x")
+                lst_2.append(f"2_sk_{i + 1}_y")
             for i in range(num_keypoints_3):
-                lst_2.append(f"3_3_kt_{i + 1}")
+                lst_2.append(f"3_kt_{i + 1}")
             for i in range(num_skeletons_3):
-                lst_2.append(f"3_3_sk_{i + 1}_x")
-                lst_2.append(f"3_3_sk_{i + 1}_y")
+                lst_2.append(f"3_sk_{i + 1}_x")
+                lst_2.append(f"3_sk_{i + 1}_y")
 
+            ht1 = packed_results['data_samples'].heatmaps_1.numpy()
+            ht2 = packed_results['data_samples'].heatmaps_2.numpy()
+            ht3 = packed_results['data_samples'].heatmaps_3.numpy()
 
-            img = (np.transpose(inputs_tensor.numpy(), (1, 2, 0))) // 2
+            idx = 0
+            for hts in [ht1, ht2, ht3]:
+                for ht_idx in range(hts.shape[0]):
+                    ht = hts[ht_idx]
+                    ht *= 255
+                    if 'kt' in lst_2[idx]:
+                        ht = np.transpose(np.array([ht, ht, ht], dtype=np.uint8), (1, 2, 0))
+                    else:
+                        ht = np.transpose(np.array([ht * 0, np.clip(-ht, 0, 255), np.clip(ht, 0, 255)], dtype=np.uint8),
+                                          (1, 2, 0))
+                    ht = cv2.resize(ht, (img.shape[1], img.shape[0]))
+                    out = img * 0.25 + ht * 0.75
+                    out = out.astype(np.uint8)
+                    cv2.imwrite(r"E:\LJW\Git\mmpose\tools\0_LJW_tools\show\{}.jpg".format(lst_2[idx]), out)
+                    idx += 1
 
-            hts = data_sample.gt_fields.heatmaps.numpy()
-            for ht_idx in range(hts.shape[0]):
-                ht = hts[ht_idx]
-                ht *= 255
-                if 'kt' in lst_2[ht_idx] :
-                    ht = np.transpose(np.array([ht, ht, ht], dtype=np.uint8), (1, 2, 0))
-                else:
-                    ht = np.transpose(np.array([ht * 0, np.clip(-ht, 0, 255), np.clip(ht, 0, 255)], dtype=np.uint8),
-                                      (1, 2, 0))
-                ht = cv2.resize(ht, (img.shape[1], img.shape[0]))
-                out = img * 0.25 + ht * 0.75
-                out = out.astype(np.uint8)
-                cv2.imwrite(r"E:\LJW\Git\mmpose\tools\0_LJW_tools\show\{}.jpg".format(lst_2[ht_idx]), out)
             exit()
 
         return packed_results

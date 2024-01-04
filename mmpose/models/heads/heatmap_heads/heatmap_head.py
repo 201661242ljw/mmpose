@@ -19,36 +19,7 @@ from ..base_head import BaseHead
 OptIntSeq = Optional[Sequence[int]]
 import numpy as np
 from scipy.ndimage.filters import gaussian_filter
-
-
-def get_all_peaks(heatmap, sigma):
-    all_peaks = []
-    peak_counter = 0
-    thre1 = 0.1
-    for part in range(heatmap.shape[0]):
-        map_ori = heatmap[part, :, :]
-        one_heatmap = gaussian_filter(map_ori, sigma=sigma)
-
-        map_left = np.zeros(one_heatmap.shape)
-        map_left[1:, :] = one_heatmap[:-1, :]
-        map_right = np.zeros(one_heatmap.shape)
-        map_right[:-1, :] = one_heatmap[1:, :]
-        map_up = np.zeros(one_heatmap.shape)
-        map_up[:, 1:] = one_heatmap[:, :-1]
-        map_down = np.zeros(one_heatmap.shape)
-        map_down[:, :-1] = one_heatmap[:, 1:]
-
-        peaks_binary = np.logical_and.reduce(
-            (one_heatmap >= map_left, one_heatmap >= map_right, one_heatmap >= map_up,
-             one_heatmap >= map_down, one_heatmap > thre1))
-        peaks = list(zip(np.nonzero(peaks_binary)[1], np.nonzero(peaks_binary)[0]))  # note reverse
-        peaks_with_score = [x + (map_ori[x[1], x[0]],) for x in peaks]
-        peak_id = range(peak_counter, peak_counter + len(peaks))
-        peaks_with_score_and_id = [peaks_with_score[i] + (peak_id[i],) for i in range(len(peak_id))]
-
-        all_peaks.append(peaks_with_score_and_id)
-        peak_counter += len(peaks)
-    return all_peaks
+from mmpose.utils import get_all_peaks
 
 
 @MODELS.register_module()
@@ -472,6 +443,19 @@ class LJW_HeatmapHead(BaseHead):
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.loss_module = MODELS.build(loss)
+
+        self.deconv_layer_12 = self._make_deconv_layers(384, [192], [4])
+        self.deconv_layer_23 = self._make_deconv_layers(399, [96], [4])
+        self.deconv_layer_34 = self._make_deconv_layers(207, [48], [4])
+
+        self.conv_layer_1 = self._make_conv_layers(384, [256, 256], [3, 3])
+        self.conv_layer_2 = self._make_conv_layers(192, [256, 256], [3, 3])
+        self.conv_layer_3 = self._make_conv_layers(96, [256, 256], [3, 3])
+
+        self.ht_layer_1 = nn.Conv2d(256, 15, 1, 1)
+        self.ht_layer_2 = nn.Conv2d(256, 15, 1, 1)
+        self.ht_layer_3 = nn.Conv2d(256, 92, 1, 1)
+
         # self.use_medium_satge = use_medium_satge
         # self.target_form = target_form
         if decoder is not None:
@@ -607,19 +591,23 @@ class LJW_HeatmapHead(BaseHead):
         Returns:
             Tensor: output heatmap.
         """
-        x = feats[-1]
+        (x4, x3, x2, x1) = feats
 
-        x = self.deconv_layers(x)
-        x = self.conv_layers(x)
-        x = self.final_layer(x)
+        x12 = self.deconv_layer_12(x1)
+        x212 = torch.cat([x2, x12], 1)
+        y1 = self.ht_layer_1(self.conv_layer_1(x212))
+        x212y1 = torch.cat([x212, y1], 1)
 
-        # feats = [item for item in feats]
+        x23 = self.deconv_layer_23(x212y1)
+        x323 = torch.cat([x3, x23], 1)
+        y2 = self.ht_layer_2(self.conv_layer_2(x323))
+        x323y2 = torch.cat([x323, y2], 1)
 
-        feats[-1] = x
-        x = torch.cat(feats, 1)
+        x34 = self.deconv_layer_34(x323y2)
+        x434 = torch.cat([x4, x34], 1)
+        y3 = self.ht_layer_3(self.conv_layer_3(x434))
 
-        # return x
-        return x
+        return (y1, y2, y3)
 
     def predict(self,
                 feats: Features,
@@ -668,7 +656,7 @@ class LJW_HeatmapHead(BaseHead):
         #         shift_heatmap=test_cfg.get('shift_heatmap', False))
         #     batch_heatmaps = (_batch_heatmaps + _batch_heatmaps_flip) * 0.5
         # else:
-        batch_heatmaps = self.forward(feats)
+        batch_heatmaps = self.forward(feats)[2]
 
         preds = self.decode(batch_heatmaps)
 
@@ -697,207 +685,87 @@ class LJW_HeatmapHead(BaseHead):
             dict: A dictionary of losses.
         """
         pred_fields = self.forward(feats)
-        gt_heatmaps = torch.stack(
-            [d.gt_fields.heatmaps for d in batch_data_samples])
-        keypoint_weights = torch.cat([
-            d.gt_instance_labels.keypoint_weights for d in batch_data_samples
-        ])
+
+        gt_heatmaps_1 = torch.stack([d.heatmaps_1 for d in batch_data_samples]).to(torch.device(feats[0].device))
+        gt_heatmaps_2 = torch.stack([d.heatmaps_2 for d in batch_data_samples]).to(torch.device(feats[0].device))
+        gt_heatmaps_3 = torch.stack([d.heatmaps_3 for d in batch_data_samples]).to(torch.device(feats[0].device))
+
+        keypoint_weights_1 = torch.cat([d.keypoint_weights_1 for d in batch_data_samples])
+        keypoint_weights_2 = torch.cat([d.keypoint_weights_2 for d in batch_data_samples])
+        keypoint_weights_3 = torch.cat([d.keypoint_weights_3 for d in batch_data_samples])
+
+        # gt_heatmaps = torch.stack(
+        #     [d.gt_fields.heatmaps for d in batch_data_samples])
+        # keypoint_weights = torch.cat([
+        #     d.gt_instance_labels.keypoint_weights for d in batch_data_samples
+        # ])
 
         # calculate losses
         losses = dict()
         # loss = self.loss_module(pred_fields, gt_heatmaps, keypoint_weights)
 
-        if self.use_medium_satge:
-            k_1_1 = self.channel_labels[0][0] * self.channel_labels[0][2] * self.channel_labels[0][2]
-            s_1_1 = self.channel_labels[0][1] * self.channel_labels[0][2] * self.channel_labels[0][2] * 2
+        kt1 = self.channel_labels[0][0] * self.channel_labels[0][2] * self.channel_labels[2][2]
+        sk1 = self.channel_labels[0][1] * self.channel_labels[0][2] * self.channel_labels[2][2] * 2
+        kt2 = self.channel_labels[1][0] * self.channel_labels[1][2] * self.channel_labels[2][2]
+        sk2 = self.channel_labels[1][1] * self.channel_labels[1][2] * self.channel_labels[2][2] * 2
+        kt3 = self.channel_labels[2][0] * self.channel_labels[2][2] * self.channel_labels[2][2]
+        sk3 = self.channel_labels[2][1] * self.channel_labels[2][2] * self.channel_labels[2][2] * 2
 
-            k_2_1 = self.channel_labels[0][0] * self.channel_labels[0][2] * self.channel_labels[1][2]
-            s_2_1 = self.channel_labels[0][1] * self.channel_labels[0][2] * self.channel_labels[1][2] * 2
-            k_2_2 = self.channel_labels[1][0] * self.channel_labels[1][2] * self.channel_labels[1][2]
-            s_2_2 = self.channel_labels[1][1] * self.channel_labels[1][2] * self.channel_labels[1][2] * 2
-
-            k_3_1 = self.channel_labels[0][0] * self.channel_labels[0][2] * self.channel_labels[2][2]
-            s_3_1 = self.channel_labels[0][1] * self.channel_labels[0][2] * self.channel_labels[2][2] * 2
-            k_3_2 = self.channel_labels[1][0] * self.channel_labels[1][2] * self.channel_labels[2][2]
-            s_3_2 = self.channel_labels[1][1] * self.channel_labels[1][2] * self.channel_labels[2][2] * 2
-            k_3_3 = self.channel_labels[2][0] * self.channel_labels[2][2] * self.channel_labels[2][2]
-            s_3_3 = self.channel_labels[2][1] * self.channel_labels[2][2] * self.channel_labels[2][2] * 2
-
-            channel_num = 0
-            # ----------------------------------------------------------------------------------------------------
-            # 1_1
-            if channel_num + k_1_1 > channel_num:
-                losses.update(
-                    loss_k11=self.loss_module(
-                        pred_fields[:, channel_num:channel_num + k_1_1, :, :],
-                        gt_heatmaps[:, channel_num:channel_num + k_1_1, :, :],
-                        keypoint_weights[:, channel_num:channel_num + k_1_1]
-                    ) * 0.5
+        # ----------------------------------------------------------------------------------------------------
+        # 1
+        # ----------------------------------------------------------------------------------------------------
+        if self.output_form_1:
+            losses.update(
+                loss_kt1=self.loss_module(
+                    pred_fields[0][:, :kt1, :, :],
+                    gt_heatmaps_1[:, :kt1, :, :],
+                    keypoint_weights_1[:, :kt1]
+                ) * 0.2
+            )
+            losses.update(
+                loss_sk1=self.loss_module(
+                    pred_fields[0][:, kt1:, :, :],
+                    gt_heatmaps_1[:, kt1:, :, :],
+                    keypoint_weights_1[:, kt1:]
+                ) * 0.2
+            )
+        # ----------------------------------------------------------------------------------------------------
+        # 2
+        # ----------------------------------------------------------------------------------------------------
+        if self.output_form_2:
+            losses.update(
+                loss_kt2=self.loss_module(
+                    pred_fields[1][:, :kt2, :, :],
+                    gt_heatmaps_2[:, :kt2, :, :],
+                    keypoint_weights_2[:, :kt2]
+                ) * 0.4
+            )
+            losses.update(
+                loss_sk2=self.loss_module(
+                    pred_fields[1][:, kt2:, :, :],
+                    gt_heatmaps_2[:, kt2:, :, :],
+                    keypoint_weights_2[:, kt2:]
+                ) * 0.4
+            )
+        # ----------------------------------------------------------------------------------------------------
+        # 3
+        # ----------------------------------------------------------------------------------------------------
+        if self.output_form_3:
+            losses.update(
+                loss_kt3=self.loss_module(
+                    pred_fields[2][:, :kt3, :, :],
+                    gt_heatmaps_3[:, :kt3, :, :],
+                    keypoint_weights_3[:, :kt3]
                 )
-            channel_num += k_1_1
-            if channel_num + s_1_1 > channel_num:
-                losses.update(
-                    loss_s11=self.loss_module(
-                        pred_fields[:, channel_num:channel_num + s_1_1, :, :],
-                        gt_heatmaps[:, channel_num:channel_num + s_1_1, :, :],
-                        keypoint_weights[:, channel_num:channel_num + s_1_1]
-                    ) * 0.5
+            )
+            losses.update(
+                loss_sk3=self.loss_module(
+                    pred_fields[2][:, kt3:, :, :],
+                    gt_heatmaps_3[:, kt3:, :, :],
+                    keypoint_weights_3[:, kt3:]
                 )
-            channel_num += s_1_1
-            # ----------------------------------------------------------------------------------------------------
-            # 2_1
-            if channel_num + k_2_1 > channel_num:
-                losses.update(
-                    loss_k21=self.loss_module(
-                        pred_fields[:, channel_num:channel_num + k_2_1, :, :],
-                        gt_heatmaps[:, channel_num:channel_num + k_2_1, :, :],
-                        keypoint_weights[:, channel_num:channel_num + k_2_1]
-                    ) * 0.75
-                )
-            channel_num += k_2_1
-            if channel_num + s_2_1 > channel_num:
-                losses.update(
-                    loss_s21=self.loss_module(
-                        pred_fields[:, channel_num:channel_num + s_2_1, :, :],
-                        gt_heatmaps[:, channel_num:channel_num + s_2_1, :, :],
-                        keypoint_weights[:, channel_num:channel_num + s_2_1]
-                    ) * 0.75
-                )
-            channel_num += s_2_1
-            # ----------------------------------------------------------------------------------------------------
-            # 2_2
-            if channel_num + k_2_2 > channel_num:
-                losses.update(
-                    loss_k22=self.loss_module(
-                        pred_fields[:, channel_num:channel_num + k_2_2, :, :],
-                        gt_heatmaps[:, channel_num:channel_num + k_2_2, :, :],
-                        keypoint_weights[:, channel_num:channel_num + k_2_2]
-                    ) * 0.75
-                )
-            channel_num += k_2_2
-            if channel_num + s_2_2 > channel_num:
-                losses.update(
-                    loss_s22=self.loss_module(
-                        pred_fields[:, channel_num:channel_num + s_2_2, :, :],
-                        gt_heatmaps[:, channel_num:channel_num + s_2_2, :, :],
-                        keypoint_weights[:, channel_num:channel_num + s_2_2]
-                    ) * 0.75
-                )
-            channel_num += s_2_2
-            # ----------------------------------------------------------------------------------------------------
-            # 3_1
-            if channel_num + k_3_1 > channel_num:
-                losses.update(
-                    loss_k31=self.loss_module(
-                        pred_fields[:, channel_num:channel_num + k_3_1, :, :],
-                        gt_heatmaps[:, channel_num:channel_num + k_3_1, :, :],
-                        keypoint_weights[:, channel_num:channel_num + k_3_1]
-                    )
-                )
-            channel_num += k_3_1
-            if channel_num + s_3_1 > channel_num:
-                losses.update(
-                    loss_s31=self.loss_module(
-                        pred_fields[:, channel_num:channel_num + s_3_1, :, :],
-                        gt_heatmaps[:, channel_num:channel_num + s_3_1, :, :],
-                        keypoint_weights[:, channel_num:channel_num + s_3_1]
-                    )
-                )
-            channel_num += s_3_1
-            # ----------------------------------------------------------------------------------------------------
-            # 3_2
-            if channel_num + k_3_2 > channel_num:
-                losses.update(
-                    loss_k32=self.loss_module(
-                        pred_fields[:, channel_num:channel_num + k_3_2, :, :],
-                        gt_heatmaps[:, channel_num:channel_num + k_3_2, :, :],
-                        keypoint_weights[:, channel_num:channel_num + k_3_2]
-                    )
-                )
-            channel_num += k_3_2
-            if channel_num + s_3_2 > channel_num:
-                losses.update(
-                    loss_s32=self.loss_module(
-                        pred_fields[:, channel_num:channel_num + s_3_2, :, :],
-                        gt_heatmaps[:, channel_num:channel_num + s_3_2, :, :],
-                        keypoint_weights[:, channel_num:channel_num + s_3_2]
-                    )
-                )
-            channel_num += s_3_2
-            # ----------------------------------------------------------------------------------------------------
-            # 3_3
-            if channel_num + k_3_3 > channel_num:
-                losses.update(
-                    loss_k33=self.loss_module(
-                        pred_fields[:, channel_num:channel_num + k_3_3, :, :],
-                        gt_heatmaps[:, channel_num:channel_num + k_3_3, :, :],
-                        keypoint_weights[:, channel_num:channel_num + k_3_3]
-                    )*3
-                )
-            channel_num += k_3_3
-            if channel_num + s_3_3 > channel_num:
-                losses.update(
-                    loss_s33=self.loss_module(
-                        pred_fields[:, channel_num:channel_num + s_3_3, :, :],
-                        gt_heatmaps[:, channel_num:channel_num + s_3_3, :, :],
-                        keypoint_weights[:, channel_num:channel_num + s_3_3]
-                    )*3
-                )
-            channel_num += s_3_3
-            # ----------------------------------------------------------------------------------------------------
-            assert channel_num == pred_fields.shape[1]
-
-        else:
-            k = self.channel_labels[0][0] * self.channel_labels[0][2] * self.channel_labels[0][2]
-            s = self.channel_labels[0][1] * self.channel_labels[0][2] * self.channel_labels[0][2] * 2
-            channel_num = 0
-            # ----------------------------------------------------------------------------------------------------
-            # 1_1
-            if channel_num + k > channel_num:
-                losses.update(
-                    loss_k=self.loss_module(
-                        pred_fields[:, channel_num:channel_num + k, :, :],
-                        gt_heatmaps[:, channel_num:channel_num + k, :, :],
-                        keypoint_weights[:, channel_num:channel_num + k]
-                    )
-                )
-            channel_num += k
-            if channel_num + s > channel_num:
-                losses.update(
-                    loss_s=self.loss_module(
-                        pred_fields[:, channel_num:channel_num + s, :, :],
-                        gt_heatmaps[:, channel_num:channel_num + s, :, :],
-                        keypoint_weights[:, channel_num:channel_num + s]
-                    )
-                )
-            channel_num += s
-            assert channel_num == pred_fields.shape[1]
-
-        # # loss_num =  loss.detach().cpu().numpy().item()
-        # loss_path = r"E:\LJW\Git\mmpose\tools\0_LJW_tools\_kt_loss.json"
-        #
-        #
-        # if not os.path.exists(loss_path):
-        #     loss_data = {
-        #         "i": 1,
-        #         "loss": loss ,
-        #     }
-        # else:
-        #     loss_data = json.load(open(loss_path, "r", encoding="utf-8"), strict=False)
-        #     loss_data['i'] += 1
-        #     loss_data["loss"] += loss
-        #
-        # losses.update(loss_kpt=loss_data["loss"]/loss_data['i'])
-        # if loss_data["i"] == 100:
-        #     os.remove(loss_path)
-        # else:
-        #
-        #     b = json.dumps(loss_data, ensure_ascii=False, indent=4)
-        #     f2 = open(loss_path, 'w', encoding='utf-8')
-        #     f2.write(b)
-        #     f2.close()
-
-        # losses.update(loss_kpt=loss)
+            )
+        # ----------------------------------------------------------------------------------------------------
 
         # calculate accuracy
         if train_cfg.get('compute_acc', True):
@@ -905,115 +773,66 @@ class LJW_HeatmapHead(BaseHead):
             #     output=to_numpy(pred_fields),
             #     target=to_numpy(gt_heatmaps),
             #     mask=to_numpy(keypoint_weights) > 0)
-            gt_kts = []
-            pred_kts = []
-            output = to_numpy(pred_fields[:, -self.out_channels:, :, :])
+            # gt_kts_1 = []
+            # pred_kts_1 = []
+            # gt_kts_2 = []
+            # pred_kts_2 = []
+            # gt_kts_3 = []
+            # pred_kts_3 = []
+            # output = to_numpy(pred_fields[2][:, -self.out_channels:, :, :])
             for idx, x in enumerate(batch_data_samples):
-                temp_gt_kts = []
-                temp_pred_kts = []
 
-                kt_length_1 = 0
-                paf_length_1 = 0
-                kt_length_2 = 0
-                paf_length_2 = 0
-                kt_length_3 = 0
-                paf_length_3 = 0
+                gt_kt_1 = [[]] * self.channel_labels[0][0]
+                for kt_idx, [x_, y_, type] in enumerate(x.raw_ann_info['true_points_1']):
+                    gt_kt_1[type - 1] = gt_kt_1[type - 1] + [
+                        [x_ // self.heatmap_scale[0], y_ // self.heatmap_scale[0], kt_idx]]
+                # gt_kts_1.append(gt_kt_1)
 
-                if self.use_medium_satge:
-                    if self.output_form_1:
+                gt_kt_2 = [[]] * self.channel_labels[1][0]
+                for kt_idx, [x_, y_, type] in enumerate(x.raw_ann_info['true_points_2']):
+                    gt_kt_2[type - 1] = gt_kt_2[type - 1] + [
+                        [x_ // self.heatmap_scale[1], y_ // self.heatmap_scale[1], kt_idx]]
+                # gt_kts_2.append(gt_kt_2)
 
-                        kt_length_1 = self.channel_labels[0][0]
-                        paf_length_1 = self.channel_labels[0][1] * 2
+                gt_kt_3 = [[]] * self.channel_labels[2][0]
+                for kt_idx, [x_, y_, type] in enumerate(x.raw_ann_info['true_points_3']):
+                    gt_kt_3[type - 1] = gt_kt_3[type - 1] + [
+                        [x_ // self.heatmap_scale[2], y_ // self.heatmap_scale[2], kt_idx]]
+                # gt_kts_3.append(gt_kt_3)
+                pred_kt_3, _ = get_all_peaks(to_numpy(pred_fields[2][idx, :kt3, :, :]), sigma=self.channel_labels[2][3])
 
-                        temp_list = [[]] * kt_length_1
-                        for kt_idx, [x_, y_, type] in enumerate(x.raw_ann_info['true_points_1']):
-                            temp_list[type - 1] = temp_list[type - 1] + [
-                                [x_ // self.heatmap_scale, y_ // self.heatmap_scale, kt_idx]]
-                        # temp_gt_kts.append(temp_list)
+                tps, fps, fns = ljw_tower_pose_pack_accuracy(output=pred_kt_3, target=gt_kt_3,
+                                                             sigma=self.channel_labels[2][3]  * 2
+                                                             )
 
-                        # pred_pt = output[idx, :kt_length_1, :, :]
-                        # temp_pred_kts.append(get_all_peaks(pred_pt, sigma=3))
-                    if self.output_form_2:
-                        kt_length_2 = self.channel_labels[1][0]
-                        paf_length_2 = self.channel_labels[1][1] * 2
-
-                        temp_list = [[]] * kt_length_2
-                        for kt_idx, [x_, y_, type] in enumerate(x.raw_ann_info['true_points_2']):
-                            temp_list[type - 1] = temp_list[type - 1] + [
-                                [x_ // self.heatmap_scale, y_ // self.heatmap_scale, kt_idx]]
-                        # temp_gt_kts.append(temp_list)
-                        #
-                        # pred_pt = output[idx, kt_length_1 + paf_length_1:kt_length_1 + paf_length_1 + kt_length_2, :, :]
-                        # temp_pred_kts.append(get_all_peaks(pred_pt, sigma=2))
-                    if self.output_form_3:
-                        kt_length_3 = self.channel_labels[2][0]
-                        paf_length_3 = self.channel_labels[2][1] * 2
-
-                        temp_list = [[]] * kt_length_3
-                        for kt_idx, [x_, y_, type] in enumerate(x.raw_ann_info['true_points_3']):
-                            temp_list[type - 1] = temp_list[type - 1] + [
-                                [x_ // self.heatmap_scale, y_ // self.heatmap_scale, kt_idx]]
-                        temp_gt_kts.append(temp_list)
-
-                        pred_pt = output[idx,
-                                  kt_length_1 + paf_length_1 + kt_length_2 + paf_length_2:kt_length_1 + paf_length_1 + kt_length_2 + paf_length_2 + kt_length_3,
-                                  :, :]
-                        temp_pred_kts.append(get_all_peaks(pred_pt, sigma=1.5))
+                log_path = r"E:\LJW\Git\mmpose\tools\0_LJW_tools\_pose_acc_log.json"
+                if not os.path.exists(log_path):
+                    log_data = {
+                        "i": 1,
+                        "tps": tps,
+                        "fps": fps,
+                        "fns": fns,
+                    }
                 else:
-                    kt_lengths = [kt_length_1, kt_length_2, kt_length_3]
-                    kt_lengths[self.target_form - 1] = self.channel_labels[0][0]
+                    log_data = json.load(open(log_path, "r", encoding="utf-8"), strict=False)
+                    log_data['i'] += 1
+                    log_data["tps"] += tps
+                    log_data["fps"] += fps
+                    log_data["fns"] += fns
 
-                    paf_lengths = [paf_length_1, paf_length_2, paf_length_3]
-                    paf_lengths[self.target_form - 1] = self.channel_labels[0][1] * 2
-
-                    temp_list = [[]] * (kt_lengths[0] + kt_lengths[1] + kt_lengths[2])
-                    for kt_idx, [x_, y_, type] in enumerate(x.raw_ann_info[f'true_points_{self.target_form}']):
-                        temp_list[type - 1] = temp_list[type - 1] + [
-                            [x_ // self.heatmap_scale, y_ // self.heatmap_scale, kt_idx]]
-                    temp_gt_kts.append(temp_list)
-
-                    pred_pt = output[idx, :kt_lengths[0] + kt_lengths[1] + kt_lengths[2], :, :]
-                    temp_pred_kts.append(get_all_peaks(pred_pt, sigma=[3, 2, 2][self.target_form - 1]))
-                gt_kts.append(temp_gt_kts)
-                pred_kts.append(temp_pred_kts)
-            #
-            tps, fps, fns = ljw_tower_pose_pack_accuracy(
-                output=pred_kts,
-                target=gt_kts,
-                channel_labels=self.channel_labels)
-            # f1_score, precision, recall = ljw_tower_pose_pack_accuracy(
-            #     output=pred_kts,
-            #     target=gt_kts,
-            #     channel_labels = self.channel_labels)
-
-            log_path = r"E:\LJW\Git\mmpose\tools\0_LJW_tools\_pose_acc_log.json"
-            if not os.path.exists(log_path):
-                log_data = {
-                    "i": 1,
-                    "tps": tps,
-                    "fps": fps,
-                    "fns": fns,
-                }
-            else:
-                log_data = json.load(open(log_path, "r", encoding="utf-8"), strict=False)
-                log_data['i'] += 1
-                log_data["tps"] += tps
-                log_data["fps"] += fps
-                log_data["fns"] += fns
-
-            precision = log_data["tps"] / max(1, (log_data["tps"] + log_data["fps"]))
-            recall = log_data["tps"] / max(1, (log_data["tps"] + log_data["fns"]))
-            f1_score = 2 * (precision * recall) / max(1e-4, (precision + recall))
-
-            if log_data["i"] == 100:
-                os.remove(log_path)
-            else:
-                b = json.dumps(log_data, ensure_ascii=False, indent=4)
-                f2 = open(log_path, 'w', encoding='utf-8')
-                f2.write(b)
-                f2.close()
-            acc_pose = torch.tensor(f1_score, device=gt_heatmaps.device)
-            losses.update(acc_pose=acc_pose)
+                precision = log_data["tps"] / max(1, (log_data["tps"] + log_data["fps"]))
+                recall = log_data["tps"] / max(1, (log_data["tps"] + log_data["fns"]))
+                f1_score = 2 * (precision * recall) / max(1e-4, (precision + recall))
+                #
+                # if log_data["i"] == 100:
+                #     os.remove(log_path)
+                # else:
+                #     b = json.dumps(log_data, ensure_ascii=False, indent=4)
+                #     f2 = open(log_path, 'w', encoding='utf-8')
+                #     f2.write(b)
+                #     f2.close()
+                acc_pose = torch.tensor(f1_score, device=feats[0].device)
+                losses.update(acc_pose=acc_pose)
 
         return losses
 

@@ -506,7 +506,8 @@ class LJW_KeypointMSELoss(nn.Module):
             Tensor: The calculated loss.
         """
 
-        _mask = self._get_mask(target, target_weights, mask)
+        # _mask = self._get_mask(target, target_weights, mask)
+        _mask = None
         if _mask is None:
             loss = F.mse_loss(output, target)
         else:

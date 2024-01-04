@@ -7,6 +7,8 @@ import mmengine
 from mmengine.config import Config, DictAction
 from mmengine.hooks import Hook
 from mmengine.runner import Runner
+from datetime import datetime
+
 
 
 def parse_args():
@@ -166,8 +168,12 @@ def main():
 
 if __name__ == '__main__':
 
+    formatted_time =  datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    f = open(r"save_dir.txt","w",encoding="utf-8")
+    f.write(formatted_time)
+    f.close()
 
-    log_date = r"2023-12-31_16-43-07"
+    log_date = r"2024-01-04_11-20-27"
     log_dir = r"E:\LJW\Git\mmpose\tools\LJW_Log\{}".format(log_date)
     max_epoch = 0
     for file_name in os.listdir(log_dir):

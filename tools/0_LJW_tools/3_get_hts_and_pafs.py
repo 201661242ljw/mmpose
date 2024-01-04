@@ -82,6 +82,7 @@ def get_finale_ann():
             f.write(json.dumps(output_data, ensure_ascii=False, indent=4))
             f.close()
 
+
 def main():
     # src_dir_img = r"E:\LJW\mmpose_\00_LJW\tower_dataset_12456_train_val_test\imgs"
     num = 0
@@ -152,13 +153,10 @@ def main():
 
             if True:
                 for image, annotation in zip(images, annotations):
-                    # continue
                     assert image["id"] == annotation["image_id"]
                     keypoints = np.array(annotation["keypoints"]).reshape(-1, 3)
                     keypoints, real_keypoint_name_list = keypoints[keypoints[:, -1] != 0], keypoint_name_list[
                         keypoints[:, -1] != 0]
-                    # if not real_keypoint_name_list[0][0] in ["1", "4", "6"]:
-                    #     continue
                     image_name = image["file_name"]
                     if not image_name in temp_data.keys():
                         temp_data[image_name] = {}
@@ -174,26 +172,6 @@ def main():
                     num += 1
                     real_keypoint_name_list = real_keypoint_name_list.tolist()
                     print(num)
-                    xs = keypoints[:, 0]
-                    ys = keypoints[:, 1]
-
-                    # temp_data[image_name]['keypoints'] = []
-                    # for keypoint_name, x, y in zip(real_keypoint_name_list, xs.tolist(), ys.tolist()):
-                    #     keypoint_info = point_name_info[keypoint_name]
-                    #     if keypoint_info["new_type"] is None:
-                    #         continue
-                    #     t = int(keypoint_info["new_type"][0])
-                    #     temp_data[image_name]['keypoints'].append([keypoint_name, x, y, t])
-                    #
-                    # have_skeletons = []
-                    # for [p1, p2, skeleton_type] in skeletons:
-                    #     if not (p1 in real_keypoint_name_list and p2 in real_keypoint_name_list):
-                    #         continue
-                    #     index_1 = real_keypoint_name_list.index(p1)
-                    #     index_2 = real_keypoint_name_list.index(p2)
-                    #     have_skeletons.append(
-                    #         [int(xs[index_1]), int(ys[index_1]), int(xs[index_2]), int(ys[index_2]), skeleton_type])
-                    # temp_data[image_name]['skeletons'] = have_skeletons
 
                     new_point_names = []
                     new_xs = []
@@ -202,6 +180,13 @@ def main():
 
                     special_flag = 0
                     special_flag_2 = 0
+                    need_flip = False
+
+                    if real_keypoint_name_list[0][0] == "4":
+                        if keypoints[real_keypoint_name_list.index("4_1_1")][0] > \
+                                keypoints[real_keypoint_name_list.index("4_1_4")][0]:
+                            need_flip = True
+
                     for (new_point_name, temp_dict) in points_data.items():
                         xs = []
                         ys = []
@@ -211,30 +196,32 @@ def main():
                                 xs.append(keypoints[real_keypoint_name_list.index(p_name)][0])
                                 ys.append(keypoints[real_keypoint_name_list.index(p_name)][1])
 
+                        aaa = {
+                            '1': "3",
+                            "2": "4",
+                            "3": "1",
+                            '4': "2",
+                            "5": "7",
+                            '6': "8",
+                            "7": "5",
+                            '8': "6",
+                        }
+
                         if len(xs) != 0:
                             x = int(np.average(np.array(xs)))
                             y = int(np.average(np.array(ys)))
-                            # for p_name in temp_dict["points"]:
-                            #     if p_name in real_keypoint_name_list:
-                            #         img = cv2.line(img, pt1=(x, y), pt2=(keypoints[real_keypoint_name_list.index(p_name)][0],
-                            #                                              keypoints[real_keypoint_name_list.index(p_name)][1]),
-                            #                        color=(255, 255, 255), thickness=2)
+                            if need_flip and sheet_order == 3:
+                                [tower_type, floor, _, num__] = new_point_name.split("_")
+                                if floor != "4":
+                                    new_point_name = f"{tower_type}_{floor}_{_}_{aaa[num__]}"
 
-                            # text = new_point_name
-                            # org = (x, y)
-                            # fontFace = cv2.FONT_HERSHEY_SIMPLEX
-                            # fontScale = 1
-                            # color = [(0, 0, 255), (0, 255, 255), (0, 255, 0), (255, 0, 0), (255, 255, 0)][temp_dict['type'] - 1]
-                            # thickness = 2
-
-                            # img = cv2.circle(img, center=(x, y), radius=30, color=color, thickness=-1)
-                            # cv2.putText(img, text, org, fontFace, fontScale, color, thickness)
                             new_point_names.append(new_point_name)
                             new_xs.append(x)
                             new_ys.append(y)
-                            new_types.append(temp_dict["type"])
+                            new_type = points_data[new_point_name]["type"]
+                            new_types.append(new_type)
                             temp_data[image_name][f'new_keypoints_{sheet_order}'].append(
-                                [new_point_name, x, y, temp_dict["type"]])
+                                [new_point_name, x, y, new_type])
                             if sheet_order == 2:
                                 if new_point_name == "4_2_4":
                                     special_flag = 1
@@ -274,8 +261,6 @@ def main():
                                 new_types.append(5)
                                 temp_data[image_name][f'new_keypoints_{sheet_order}'].append(
                                     ["4_2_sk_8", x, y, 5])
-                        a = temp_data[image_name]
-                        asas = 1
                     # skeleton
                     for (_, temp_dict) in skeleton_data.items():
                         p1 = temp_dict['p1']
@@ -284,9 +269,14 @@ def main():
                         if special_flag and sheet_order == 2:
                             if p1 == "4_2_2" and p2 == "4_3_2":
                                 continue
-                        # if special_flag and sheet_order == 3:
-                        #     if p1 in ["4_2_2", "4_2_3", "4_2_4", "4_2_5"] and "4_3_" in p2:
-                        #         continue
+                        if need_flip and sheet_order==3:
+                            if p1 == "4_3_sk_8" and p2 == "4_4_sk_8":
+                                p1 = "4_3_sk_7"
+                                p2 = "4_4_sk_7"
+                            if p1 == "4_3_sk_5" and p2 == "4_4_sk_7":
+                                p1 = "4_3_sk_6"
+                                p2 = "4_4_sk_8"
+
 
                         if p1 in new_point_names and p2 in new_point_names:
                             x1 = new_xs[new_point_names.index(p1)]
@@ -297,28 +287,9 @@ def main():
                             t2 = new_types[new_point_names.index(p2)]
                             temp_data[image_name][f'new_skeletons_{sheet_order}'].append([x1, y1, t1, x2, y2, t2, t])
 
-                            # color = [(0, 0, 255), (0, 255, 255), (0, 255, 0), (255, 0, 0), (255, 255, 0)][temp_dict['type'] - 1]
-
-                    #         img = cv2.line(img, pt1=(x1, y1), pt2=(x2, y2), color=color, thickness=5)
-                    #
-                    # cv2.imwrite(file_name.replace(".JPG", "_2.JPG"), img)
-
-                    # img = cv2.imread(file_path, 1) // 8
-                    # for keypoint, keypoint_name in zip(keypoints, real_keypoint_name_list):
-                    #     x = keypoint[0]
-                    #     y = keypoint[1]
-                    # img = cv2.circle(img, center=(x, y), radius=2, color=(0, 255, 255), thickness=-1)
-                    # text = keypoint_name
-                    #
-                    # org = (x, y)
-                    # fontFace = cv2.FONT_HERSHEY_SIMPLEX
-                    # fontScale = 0.5
-                    # color = (0, 0, 255)
-                    # thickness = 2
-                    # cv2.putText(img, text, org, fontFace, fontScale, color, thickness)
 
                 # if True:
-                if not  True:
+                if not True:
                     for image, annotation in zip(images_partial, annotations_partial):
                         # continue
                         assert image["id"] == annotation["image_id"]
@@ -350,6 +321,12 @@ def main():
 
                         special_flag = 0
                         special_flag_2 = 0
+                        need_flip = False
+
+                        if real_keypoint_name_list[0][0] == "4":
+                            if keypoints[real_keypoint_name_list.index("4_1_1")][0] > \
+                                    keypoints[real_keypoint_name_list.index("4_1_4")][0]:
+                                need_flip = True
 
                         for (new_point_name, temp_dict) in points_data.items():
                             xs = []
@@ -360,60 +337,71 @@ def main():
                                     xs.append(keypoints[real_keypoint_name_list.index(p_name)][0])
                                     ys.append(keypoints[real_keypoint_name_list.index(p_name)][1])
 
+                            aaa = {
+                                '1': "3",
+                                "2": "4",
+                                "3": "1",
+                                '4': "2",
+                                "5": "7",
+                                '6': "8",
+                                "7": "5",
+                                '8': "6",
+                            }
+
                             if len(xs) != 0:
                                 x = int(np.average(np.array(xs)))
                                 y = int(np.average(np.array(ys)))
+                                if need_flip and sheet_order == 3:
+                                    [tower_type, floor, _, num__] = new_point_name.split("_")
+                                    if floor != "4":
+                                        new_point_name = f"{tower_type}_{floor}_{_}_{aaa[num__]}"
 
                                 new_point_names.append(new_point_name)
                                 new_xs.append(x)
                                 new_ys.append(y)
-                                new_types.append(temp_dict["type"])
+                                new_type = points_data[new_point_name]["type"]
+                                new_types.append(new_type)
                                 temp_data[image_name][f'new_keypoints_{sheet_order}'].append(
-                                    [new_point_name, x, y, temp_dict["type"]])
+                                    [new_point_name, x, y, new_type])
                                 if sheet_order == 2:
                                     if new_point_name == "4_2_4":
                                         special_flag = 1
-                                        if sheet_order == 2:
-                                            if new_point_name == "4_2_4":
-                                                special_flag = 1
                                 elif sheet_order == 3:
                                     if new_point_name == "4_2_sk_1":
                                         special_flag = 1
                                     if new_point_name == "4_2_e_1":
                                         special_flag_2 = 1
 
-                            if (special_flag_2 == 0 and special_flag == 1) and sheet_order == 3:
-                                for [new_point_name, x, y, t_] in temp_data[image_name][
-                                    f'new_keypoints_{sheet_order}']:
-                                    if new_point_name == "4_2_sk_1":
-                                        new_point_names.append("4_2_sk_5")
-                                        new_xs.append(x)
-                                        new_ys.append(y)
-                                        new_types.append(3)
-                                        temp_data[image_name][f'new_keypoints_{sheet_order}'].append(
-                                            ["4_2_sk_5", x, y, 3])
-                                    if new_point_name == "4_2_sk_2":
-                                        new_point_names.append("4_2_sk_6")
-                                        new_xs.append(x)
-                                        new_ys.append(y)
-                                        new_types.append(3)
-                                        temp_data[image_name][f'new_keypoints_{sheet_order}'].append(
-                                            ["4_2_sk_6", x, y, 3])
-                                    if new_point_name == "4_2_sk_3":
-                                        new_point_names.append("4_2_sk_7")
-                                        new_xs.append(x)
-                                        new_ys.append(y)
-                                        new_types.append(5)
-                                        temp_data[image_name][f'new_keypoints_{sheet_order}'].append(
-                                            ["4_2_sk_7", x, y, 5])
-                                    if new_point_name == "4_2_sk_4":
-                                        new_point_names.append("4_2_sk_8")
-                                        new_xs.append(x)
-                                        new_ys.append(y)
-                                        new_types.append(5)
-                                        temp_data[image_name][f'new_keypoints_{sheet_order}'].append(
-                                            ["4_2_sk_8", x, y, 5])
-
+                        if (special_flag_2 == 0 and special_flag == 1) and sheet_order == 3:
+                            for [new_point_name, x, y, t_] in temp_data[image_name][f'new_keypoints_{sheet_order}']:
+                                if new_point_name == "4_2_sk_1":
+                                    new_point_names.append("4_2_sk_5")
+                                    new_xs.append(x)
+                                    new_ys.append(y)
+                                    new_types.append(3)
+                                    temp_data[image_name][f'new_keypoints_{sheet_order}'].append(
+                                        ["4_2_sk_5", x, y, 3])
+                                if new_point_name == "4_2_sk_2":
+                                    new_point_names.append("4_2_sk_6")
+                                    new_xs.append(x)
+                                    new_ys.append(y)
+                                    new_types.append(3)
+                                    temp_data[image_name][f'new_keypoints_{sheet_order}'].append(
+                                        ["4_2_sk_6", x, y, 3])
+                                if new_point_name == "4_2_sk_3":
+                                    new_point_names.append("4_2_sk_7")
+                                    new_xs.append(x)
+                                    new_ys.append(y)
+                                    new_types.append(5)
+                                    temp_data[image_name][f'new_keypoints_{sheet_order}'].append(
+                                        ["4_2_sk_7", x, y, 5])
+                                if new_point_name == "4_2_sk_4":
+                                    new_point_names.append("4_2_sk_8")
+                                    new_xs.append(x)
+                                    new_ys.append(y)
+                                    new_types.append(5)
+                                    temp_data[image_name][f'new_keypoints_{sheet_order}'].append(
+                                        ["4_2_sk_8", x, y, 5])
                         # skeleton
                         for (_, temp_dict) in skeleton_data.items():
                             p1 = temp_dict['p1']
@@ -422,6 +410,13 @@ def main():
                             if special_flag and sheet_order == 2:
                                 if p1 == "4_2_2" and p2 == "4_3_2":
                                     continue
+                            if need_flip and sheet_order == 3:
+                                if p1 == "4_3_sk_8" and p2 == "4_4_sk_8":
+                                    p1 = "4_3_sk_7"
+                                    p2 = "4_4_sk_7"
+                                if p1 == "4_3_sk_5" and p2 == "4_4_sk_7":
+                                    p1 = "4_3_sk_6"
+                                    p2 = "4_4_sk_8"
 
                             if p1 in new_point_names and p2 in new_point_names:
                                 x1 = new_xs[new_point_names.index(p1)]
@@ -430,29 +425,11 @@ def main():
                                 x2 = new_xs[new_point_names.index(p2)]
                                 y2 = new_ys[new_point_names.index(p2)]
                                 t2 = new_types[new_point_names.index(p2)]
-                                temp_data[image_name][f'new_skeletons_{sheet_order}'].append([x1, y1, t1, x2, y2, t2, t])
-
-                                # color = [(0, 0, 255), (0, 255, 255), (0, 255, 0), (255, 0, 0), (255, 255, 0)][temp_dict['type'] - 1]
-
-                        #         img = cv2.line(img, pt1=(x1, y1), pt2=(x2, y2), color=color, thickness=5)
-                        #
-                        # cv2.imwrite(file_name.replace(".JPG", "_2.JPG"), img)
-
-                        # img = cv2.imread(file_path, 1) // 8
-                        # for keypoint, keypoint_name in zip(keypoints, real_keypoint_name_list):
-                        #     x = keypoint[0]
-                        #     y = keypoint[1]
-                        # img = cv2.circle(img, center=(x, y), radius=2, color=(0, 255, 255), thickness=-1)
-                        # text = keypoint_name
-                        #
-                        # org = (x, y)
-                        # fontFace = cv2.FONT_HERSHEY_SIMPLEX
-                        # fontScale = 0.5
-                        # color = (0, 0, 255)
-                        # thickness = 2
-                        # cv2.putText(img, text, org, fontFace, fontScale, color, thickness)
+                                temp_data[image_name][f'new_skeletons_{sheet_order}'].append(
+                                    [x1, y1, t1, x2, y2, t2, t])
 
                 ue_img_dataset = [train_img_list, val_img_list, test_img_list][dataset_idx]
+                real_keypoint_name_list = []
                 for ue_img_name in ue_img_dataset:
                     num += 1
                     print(num)
@@ -494,6 +471,13 @@ def main():
                         if len(xs) != 0:
                             x = int(np.average(np.array(xs)))
                             y = int(np.average(np.array(ys)))
+                            if need_flip:
+                                [tower_type, floor, _, num] = new_point_name.split("_")
+                                num = int(num)
+                                if num < 5:
+                                    new_point_name = f"{tower_type}_{floor}_e_{int(4 - num)}"
+                                else:
+                                    new_point_name = f"{tower_type}_{floor}_e_{int(13 - num)}"
                             # for p_name in temp_dict["points"]:
                             #     if p_name in real_keypoint_name_list:
                             #         img = cv2.line(img, pt1=(x, y), pt2=(keypoints[real_keypoint_name_list.index(p_name)][0],
@@ -557,16 +541,21 @@ def get_sample():
                 img = cv2.putText(img, kt_name, (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
                 # cv2.putText(image, text, (5, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
             cv2.imwrite("../data/label_kts/{}.jpg".format(tower_type), img)
+        if tower_type == "4":
+            already_draw.append(tower_type)
+            img_path = img_data['file_path']
+            img = cv2.imread(img_path, 1) // 8
+            for [kt_name, x, y, kt_type] in kts:
+                img = cv2.circle(img, center=(x, y), color=pt_colors[kt_type - 1], thickness=-1, radius=3)
+                img = cv2.putText(img, kt_name, (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
+                # cv2.putText(image, text, (5, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
+            cv2.imwrite("../data/label_kts/{}.jpg".format(os.path.basename(img_path)), img)
 
 
 def step2():
     # type_ = 2
-    # for new_size in [256, 384, 512, 640, 768, 1024, 1280][-1:]:
     for new_size in [256, 384, 512, 640, 768, 1024, 1280]:
-        # for new_size in [ 1280]:
-        # ann_dir = r"E:\LJW\mmpose_\00_LJW\00_new_dataset"
         ann_dir = r"../data/00_new_dataset"
-        # save_dir = r"E:\LJW\Git\00_Tower_Dataset/{}".format(new_size)
         save_dir = r"../data/00_Tower_Dataset/{}".format(new_size)
 
         if os.path.exists(os.path.join(save_dir, "imgs_show")):
@@ -648,15 +637,12 @@ def step2():
                         img = cv2.imread(img_path, 1)
                         new_img = cv2.resize(img, (new_width, new_height))
                         cv2.imwrite(save_path, new_img)
-                    # if flag in already_draw_list and not "scene" in img_name:
-                    if flag in already_draw_list and '04_4_020_head_no_0_0' not in img_name and "11_1_250_head_have_3_0" not in img_name:
+                    # if flag != "4":
+                    if flag in already_draw_list :
                         continue
 
                     img = cv2.imread(img_path, 1)
                     new_img = cv2.resize(img, (new_width, new_height))
-                    # save_path= os.path.join(save_dir, "imgs", img_name)
-                    # if not os.path.exists(save_path):
-                    #     cv2.imwrite(save_path, new_img)
                     new_img = new_img // 16
 
                     for [p_name, x, y, t] in img_data[f'new_keypoints_{type_}']:
@@ -667,8 +653,6 @@ def step2():
                                              radius=new_size // 256)
 
                     for [x1, y1, t1, x2, y2, t2, kt] in img_data[f"new_skeletons_{type_}"]:
-                        # new_img = cv2.circle(new_img, center=(x2, y2), color=pt_colors[t2 - 1], thickness=-1,
-                        #                      radius=new_size // 256)
                         new_img = cv2.arrowedLine(new_img, pt1=(x1, y1), pt2=((x2 + x1) // 2, (y1 + y2) // 2),
                                                   color=sk_colores[kt - 1], thickness=2)
                         new_img = cv2.line(new_img, pt1=(x1, y1), pt2=(x2, y2), color=sk_colores[kt - 1], thickness=1)
@@ -689,371 +673,52 @@ def step2():
 def get_complex_skeletons():
     import openpyxl
 
-    # temp_dict = {
-    #     1: {
-    #         "description": "前层边缘点和下层支撑点",
-    #         "floors": [
-    #             [[11, 11], [12, 12], [13, 13], [21, 21], [22, 22], [31, 31], [32, 32], [33, 33], [41, 41], [44, 44]],
-    #             [[42, 42]],
-    #             [[51, 51], [61, 61]]
-    #         ],
-    #         "name_pairs": [
-    #             [["sk_1", "e_1"], ["sk_2", "e_2"]],
-    #             [["sk_1", "e_1"]],
-    #             [["sk_1", "e_1"], ["sk_4", "e_2"]]
-    #         ]
-    #     },
-    #     2: {
-    #         "description": "后层边缘点和下层支撑点",
-    #         "floors": [
-    #             [[11, 11], [12, 12], [13, 13], [21, 21], [22, 22], [31, 31], [32, 32], [33, 33], [41, 41], [44, 44]],
-    #             [[42, 42]],
-    #             [[51, 51], [61, 61]]
-    #         ],
-    #         "name_pairs": [
-    #             [["sk_3", "e_3"], ["sk_4", "e_4"]],
-    #             [["sk_4", "e_4"]],
-    #             [["sk_5", "e_3"], ["sk_8", "e_4"]]
-    #         ]
-    #     },
-    #     3: {
-    #         "description": "前层边缘点和上层支撑点",
-    #         "floors": [
-    #             [[11, 11], [12, 12], [13, 13], [21, 21], [22, 22], [31, 31], [32, 32], [33, 33], [41, 41], [44, 44]],
-    #             [[42, 42]],
-    #             [[52, 51], [62, 61]]
-    #         ],
-    #         "name_pairs": [
-    #             [["sk_5", "e_1"], ["sk_6", "e_2"]],
-    #             [["sk_5", "e_1"]],
-    #             [["sk_1", "e_1"], ["sk_4", "e_2"]]
-    #         ]
-    #     },
-    #     4: {
-    #         "description": "后层边缘点和上层支撑点",
-    #         "floors": [
-    #             [[11, 11], [12, 12], [13, 13], [21, 21], [22, 22], [31, 31], [32, 32], [33, 33], [41, 41], [44, 44]],
-    #             [[42, 42]],
-    #             [[52, 51], [62, 61]]
-    #         ],
-    #         "name_pairs": [
-    #             [["sk_7", "e_3"], ["sk_8", "e_4"]],
-    #             [["sk_8", "e_4"]],
-    #             [["sk_5", "e_3"], ["sk_8", "e_4"]]
-    #         ]
-    #     },
-    #     5: {
-    #         "description": "边缘点前后相连",
-    #         "floors": [
-    #             [[11, 11], [12, 12], [13, 13], [21, 21], [22, 22], [23, 23], [31, 31], [32, 32], [33, 33], [41, 41],
-    #              [44, 44], [51, 51], [61, 61]],
-    #             [[42, 42]]
-    #         ],
-    #         "name_pairs": [
-    #             [["e_4", "e_1"], ["e_3", "e_2"]],
-    #             [["e_4", "e_1"]]
-    #         ]
-    #     },
-    #     6: {
-    #         "description": "前面下层支撑点水平相连",
-    #         "floors": [
-    #             [[11, 11], [12, 12], [13, 13], [14, 14], [21, 21], [22, 22], [24, 24], [31, 31], [32, 32], [33, 33],
-    #              [34, 34], [41, 41], [42, 42], [43, 43], [44, 44]],
-    #             [[51, 51], [61, 61]]
-    #         ],
-    #         "name_pairs": [
-    #             [["sk_1", "sk_2"]],
-    #             [["sk_1", "sk_2"], ["sk_3", "sk_4"]]
-    #         ]
-    #     },
-    #     7: {
-    #         "description": "后面下层支撑点水平相连",
-    #         "floors": [
-    #             [[11, 11], [12, 12], [13, 13], [14, 14], [21, 21], [22, 22], [24, 24], [31, 31], [32, 32], [33, 33],
-    #              [34, 34], [41, 41], [42, 42], [43, 43], [44, 44]],
-    #             [[51, 51], [61, 61]]
-    #         ],
-    #         "name_pairs": [
-    #             [["sk_4", "sk_3"]],
-    #             [["sk_8", "sk_7"], ["sk_6", "sk_5"]]
-    #         ]
-    #     },
-    #     8: {
-    #         "description": "前面上层支撑点水平相连",
-    #         "floors": [
-    #             [[11, 11], [12, 12], [13, 13], [14, 14], [21, 21], [22, 22], [24, 24], [31, 31], [32, 32], [33, 33],
-    #              [34, 34], [41, 41], [42, 42], [43, 43], [44, 44]],
-    #             [[52, 52], [62, 62]]
-    #         ],
-    #         "name_pairs": [
-    #             [["sk_5", "sk_6"]],
-    #             [["sk_1", "sk_2"], ["sk_3", "sk_4"]]
-    #         ]
-    #     },
-    #     9: {
-    #         "description": "后面上层支撑点水平相连",
-    #         "floors": [
-    #             [[11, 11], [12, 12], [13, 13], [14, 14], [21, 21], [22, 22], [24, 24], [31, 31], [32, 32], [33, 33],
-    #              [34, 34], [41, 41], [42, 42], [43, 43], [44, 44]],
-    #             [[52, 52], [62, 62]]
-    #         ],
-    #         "name_pairs": [
-    #             [["sk_8", "sk_7"]],
-    #             [["sk_8", "sk_7"], ["sk_6", "sk_5"]]
-    #         ]
-    #     },
-    #     10: {
-    #         "description": "下层支撑点前后相连",
-    #         "floors": [
-    #             [[11, 11], [12, 12], [13, 13], [14, 14], [21, 21], [22, 22], [24, 24], [31, 31], [32, 32], [33, 33],
-    #              [34, 34], [41, 41], [42, 42], [43, 43], [44, 44]],
-    #             [[51, 51], [61, 61]]
-    #         ],
-    #         "name_pairs": [
-    #             [["sk_4", "sk_1"], ["sk_3", "sk_2"]],
-    #             [["sk_8", "sk_1"], ["sk_7", "sk_2"], ["sk_6", "sk_3"], ["sk_5", "sk_4"]]
-    #         ]
-    #     },
-    #     11: {
-    #         "description": "上层支撑点前后相连",
-    #         "floors": [
-    #             [[11, 11], [12, 12], [13, 13], [14, 14], [21, 21], [22, 22], [24, 24], [31, 31], [32, 32], [33, 33],
-    #              [34, 34], [41, 41], [42, 42], [43, 43], [44, 44]],
-    #             [[52, 52], [62, 62]]
-    #         ],
-    #         "name_pairs": [
-    #             [["sk_8", "sk_5"], ["sk_7", "sk_6"]],
-    #             [["sk_8", "sk_1"], ["sk_7", "sk_2"], ["sk_6", "sk_3"], ["sk_5", "sk_4"]]
-    #         ]
-    #     },
-    #     12: {
-    #         "description": "前层同层支撑点上下相连",
-    #         "floors": [
-    #             [[11, 11], [12, 12], [13, 13], [14, 14], [21, 21], [22, 22], [24, 24], [31, 31], [32, 32], [33, 33],
-    #              [34, 34], [41, 41], [42, 42], [43, 43], [44, 44]],
-    #             [[51, 52], [61, 62]]
-    #         ],
-    #         "name_pairs": [
-    #             [["sk_1", "sk_5"], ["sk_2", "sk_6"]],
-    #             [["sk_1", "sk_1"], ["sk_2", "sk_2"], ["sk_3", "sk_3"], ["sk_4", "sk_4"]]
-    #         ]
-    #     },
-    #     13: {
-    #         "description": "后层同层支撑点上下相连",
-    #         "floors": [
-    #             [[11, 11], [12, 12], [13, 13], [14, 14], [21, 21], [22, 22], [24, 24], [31, 31], [32, 32], [33, 33],
-    #              [34, 34], [41, 41], [42, 42], [43, 43], [44, 44]],
-    #             [[51, 52], [61, 62]]
-    #         ],
-    #         "name_pairs": [
-    #             [["sk_4", "sk_8"], ["sk_3", "sk_7"]],
-    #             [["sk_8", "sk_8"], ["sk_7", "sk_7"], ["sk_6", "sk_6"], ["sk_5", "sk_5"]]
-    #         ]
-    #     },
-    #     14: {
-    #         "description": "前层隔层支撑点上下相连",
-    #         "floors": [
-    #             [[11, 12], [12, 13], [13, 14], [21, 22], [22, 24], [31, 32], [32, 33], [33, 34],
-    #              [41, 42], [42, 43]]
-    #         ],
-    #         "name_pairs": [
-    #             [["sk_5", "sk_1"], ["sk_6", "sk_2"]]
-    #         ]
-    #
-    #     },
-    #     15: {
-    #         "description": "后层隔层支撑点上下相连",
-    #         "floors": [
-    #             [[11, 12], [12, 13], [13, 14], [21, 22], [22, 24], [31, 32], [32, 33], [33, 34],
-    #              [41, 42], [42, 43]]
-    #         ],
-    #         "name_pairs": [
-    #             [["sk_8", "sk_4"], ["sk_7", "sk_3"]]
-    #         ]
-    #     },
-    #     16: {
-    #         "description": "前前上隔层支撑点水平相连"
-    #     },
-    #     17: {
-    #         "description": "前后上隔层支撑点水平相连"}
-    #     ,
-    #     18: {
-    #         "description": "后前上隔层支撑点水平相连"
-    #     },
-    #     19: {
-    #         "description": "后后上隔层支撑点水平相连"
-    #     },
-    #     20: {""
-    #          "description": "前前下隔层支撑点水平相连"
-    #          },
-    #     21: {
-    #         "description": "前后下隔层支撑点水平相连"
-    #     },
-    #     22: {
-    #         "description": "后前下隔层支撑点水平相连"
-    #     },
-    #     23: {
-    #         "description": "后后下隔层支撑点水平相连"
-    #     },
-    #     24: {
-    #         "description": "前面非边缘绝缘子点和支撑点相连",
-    #         "floors": [
-    #             [[51, 51], [61, 61]]
-    #         ],
-    #         "name_pairs": [
-    #             [["sk_2", "se_1"], ["sk_3", "se_1"]]
-    #         ]
-    #     },
-    #     25: {
-    #         "description": "后面非边缘绝缘子点和支撑点相连",
-    #         "floors": [
-    #             [[51, 51], [61, 61]]
-    #         ],
-    #         "name_pairs": [
-    #             [["sk_6", "se_2"], ["sk_7", "se_2"]]
-    #         ]
-    #     },
-    #     26: {
-    #         "description": "非边缘绝缘子点前后相连",
-    #         "floors": [
-    #             [[51, 51], [61, 61]]
-    #         ],
-    #         "name_pairs": [
-    #             [["se_2", "se_1"], ["se_2", "se_1"]]
-    #         ]
-    #     },
-    #     27: {
-    #         "description": "前下支撑点与前避雷线点",
-    #         "floors": [
-    #             [[14, 14], [24, 24], [34, 34], [43, 43]]
-    #         ],
-    #         "name_pairs": [
-    #             [["sk_1", "bl_1"], ["sk_2", "bl_2"]]
-    #         ]
-    #     },
-    #     28: {
-    #         "description": "前上支撑点与前避雷线点",
-    #         "floors": [
-    #             [[14, 14], [24, 24], [34, 34], [43, 43]]
-    #         ],
-    #         "name_pairs": [
-    #             [["sk_5", "bl_1"], ["sk_5", "bl_2"]]
-    #         ]
-    #     },
-    #     29: {
-    #         "description": "后下支撑点与后避雷线点",
-    #         "floors": [
-    #             [[14, 14], [24, 24], [34, 34], [43, 43]]
-    #         ],
-    #         "name_pairs": [
-    #             [["sk_4", "bl_4"], ["sk_3", "bl_3"]]
-    #         ]
-    #     },
-    #     30: {
-    #         "description": "后上支撑点与后避雷线点",
-    #         "floors": [
-    #             [[14, 14], [24, 24], [34, 34], [43, 43]]
-    #         ],
-    #         "name_pairs": [
-    #             [["sk_8", "bl_4"], ["sk_7", "bl_3"]]
-    #         ]
-    #     },
-    #     31: {
-    #         "description": "酒杯型避雷线点与前支撑点相连",
-    #         "floors": [
-    #             [[52, 53], [62, 63]]
-    #         ],
-    #         "name_pairs": [
-    #             [["sk_1", "bl_1"], ["sk_2", "bl_1"],["sk_3", "bl_2"], ["sk_4", "bl_2"]]
-    #         ]
-    #     },
-    #     32: {
-    #         "description": "酒杯型避雷线点与后支撑点相连",
-    #         "floors": [
-    #             [[52, 53], [62, 63]]
-    #         ],
-    #         "name_pairs": [
-    #             [["sk_8", "bl_4"], ["sk_7", "bl_4"],["sk_6", "bl_3"], ["sk_5", "bl_3"]]
-    #         ]
-    #     },
-    #     33: {
-    #         "description": "下前特殊支撑点-前边缘点"
-    #     },
-    #     34: {
-    #         "description": "下前特殊支撑点-前边缘点"
-    #     },
-    #     35: {
-    #         "description": "上前特殊支撑点-前边缘点"
-    #     },
-    #     36: {
-    #         "description": "下后特殊支撑点-后边缘点"
-    #     },
-    #     37: {
-    #         "description": "上后特殊支撑点-后边缘点"
-    #     },
-    #     38: {
-    #         "description": "上层特殊支撑点前后相连"
-    #     },
-    #     39: {
-    #         "description": "下层特殊支撑点前后相连"
-    #     },
-    #     40: {
-    #         "description": "前面特殊支撑点下上相连"
-    #     },
-    #     41: {
-    #         "description": "后面特殊支撑点下上相连"
-    #     },
-    # }
     temp_dict = [
         {
             "description": "前层边缘点和下层支撑点",
             "floors": [
-                [[11, 11], [12, 12], [13, 13], [21, 21], [22, 22], [31, 31], [32, 32], [33, 33], [41, 41], [44, 44]],
-                [[42, 42]],
+                [[11, 11], [12, 12], [13, 13], [21, 21], [22, 22], [31, 31], [32, 32], [33, 33], [41, 41], [44, 44],
+                 [42, 42]],
                 [[51, 51], [61, 61]]
             ],
             "name_pairs": [
                 [["sk_1", "e_1"], ["sk_2", "e_2"]],
-                [["sk_1", "e_1"]],
                 [["sk_1", "e_1"], ["sk_4", "e_2"]]
             ]
         },
         {
             "description": "后层边缘点和下层支撑点",
             "floors": [
-                [[11, 11], [12, 12], [13, 13], [21, 21], [22, 22], [31, 31], [32, 32], [33, 33], [41, 41], [44, 44]],
-                [[42, 42]],
+                [[11, 11], [12, 12], [13, 13], [21, 21], [22, 22], [31, 31], [32, 32], [33, 33], [41, 41], [44, 44],
+                 [42, 42]],
                 [[51, 51], [61, 61]]
             ],
             "name_pairs": [
                 [["sk_3", "e_3"], ["sk_4", "e_4"]],
-                [["sk_4", "e_4"]],
                 [["sk_5", "e_3"], ["sk_8", "e_4"]]
             ]
         },
         {
             "description": "前层边缘点和上层支撑点",
             "floors": [
-                [[11, 11], [12, 12], [13, 13], [21, 21], [22, 22], [31, 31], [32, 32], [33, 33], [41, 41], [44, 44]],
-                [[42, 42]],
+                [[11, 11], [12, 12], [13, 13], [21, 21], [22, 22], [31, 31], [32, 32], [33, 33], [41, 41], [44, 44],
+                 [42, 42]],
                 [[52, 51], [62, 61]]
             ],
             "name_pairs": [
                 [["sk_5", "e_1"], ["sk_6", "e_2"]],
-                [["sk_5", "e_1"]],
                 [["sk_1", "e_1"], ["sk_4", "e_2"]]
             ]
         },
         {
             "description": "后层边缘点和上层支撑点",
             "floors": [
-                [[11, 11], [12, 12], [13, 13], [21, 21], [22, 22], [31, 31], [32, 32], [33, 33], [41, 41], [44, 44]],
-                [[42, 42]],
+                [[11, 11], [12, 12], [13, 13], [21, 21], [22, 22], [31, 31], [32, 32], [33, 33], [41, 41], [44, 44],
+                 [42, 42]],
                 [[52, 51], [62, 61]]
             ],
             "name_pairs": [
                 [["sk_7", "e_3"], ["sk_8", "e_4"]],
-                [["sk_8", "e_4"]],
                 [["sk_5", "e_3"], ["sk_8", "e_4"]]
             ]
         },
@@ -1061,12 +726,10 @@ def get_complex_skeletons():
             "description": "边缘点前后相连",
             "floors": [
                 [[11, 11], [12, 12], [13, 13], [21, 21], [22, 22], [23, 23], [31, 31], [32, 32], [33, 33], [41, 41],
-                 [44, 44], [51, 51], [61, 61]],
-                [[42, 42]]
+                 [42, 42], [44, 44], [51, 51], [61, 61]],
             ],
             "name_pairs": [
                 [["e_4", "e_1"], ["e_3", "e_2"]],
-                [["e_4", "e_1"]]
             ]
         },
         {
@@ -1472,6 +1135,84 @@ def get_sk_ids():
     a = 1
 
 
+def get_only_one_sample():
+    src_dir = r"../data/00_Tower_Dataset"
+
+    json_path = r"../data/coco/annotations/person_keypoints_train2017.json"
+    template_data = json.load(open(json_path, "r", encoding="utf-8"), strict=False)
+
+    for input_size in [256, 384, 512, 640, 768, 1024, 1280]:
+        img_id = 0
+        ann_id = 0
+        for dataset in ['train', 'val', 'test']:
+            output_data = copy.deepcopy(template_data)
+            output_data['categories'] = [{'supercategory': "tower",
+                                          'id': 0,
+                                          'name': 'tower',
+                                          'keypoints': ['edgepoint',
+                                                        'skeletonpoints',
+                                                        'edgepoint_2',
+                                                        'bileipoint',
+                                                        'skeletonpoint_2'],
+                                          'skeleton': []
+                                          }]
+            output_data['images'] = []
+            output_data['annotations'] = []
+
+            json_path = r"{}/{}/anns/tower_info_{}.json".format(src_dir, input_size, dataset)
+            data = json.load(open(json_path, "r", encoding="utf-8"), strict=False)
+
+            num = 0
+
+            for (img_name, temp_dict) in data.items():
+                width = temp_dict['width']
+                height = temp_dict['height']
+                keypoint_list = [width // 2, height // 2, 2] * 5
+                [x1, y1, x2, y2] = temp_dict['bbox']
+
+                img_dict = {
+                    "license": 1,
+                    "file_name": img_name,
+                    "coco_url": "",
+                    "height": height,
+                    "width": width,
+                    "date_captured": "",
+                    "flickr_url": "",
+                    "id": img_id
+                }
+
+                ann_dict = {
+                    "segmentation": [[x1, y1, x2, y1, x2, y2, x1, y2]],
+                    "true_points_1": np.array(temp_dict["new_keypoints_1"])[:, 1:].astype(np.int32).tolist(),
+                    "true_skeletons_1": temp_dict["new_skeletons_1"],
+                    "true_points_2": np.array(temp_dict["new_keypoints_2"])[:, 1:].astype(np.int32).tolist(),
+                    "true_skeletons_2": temp_dict["new_skeletons_2"],
+                    "true_points_3": np.array(temp_dict["new_keypoints_3"])[:, 1:].astype(np.int32).tolist(),
+                    "true_skeletons_3": temp_dict["new_skeletons_3"],
+                    "num_keypoints": 5,
+                    "area": int((x2 - x1) * (y2 - y1)),
+                    "iscrowd": 0,
+                    "keypoints": keypoint_list,
+                    "image_id": img_id,
+                    "bbox": [x1, y1, x2 - x1, y2 - y1],
+                    "category_id": 1,
+                    "id": ann_id
+                }
+                output_data['images'].append(img_dict)
+                output_data['annotations'].append(ann_dict)
+
+                img_id += 1
+                ann_id += 1
+                num += 1
+                if num > 3:
+                    break
+
+            out_json_path = r"{}/{}/anns/tower_keypoints_{}_2.json".format(src_dir, input_size, dataset)
+            f = open(out_json_path, "w", encoding="utf-8")
+            f.write(json.dumps(output_data, ensure_ascii=False, indent=4))
+            f.close()
+
+
 if __name__ == '__main__':
     scale = 8
     sigma = 2
@@ -1506,6 +1247,6 @@ if __name__ == '__main__':
     # main()
     # step2()
     get_finale_ann()
-
+    # get_only_one_sample()
     # get_sample()
     # get_sk_ids()
