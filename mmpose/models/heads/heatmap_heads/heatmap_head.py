@@ -19,7 +19,8 @@ from ..base_head import BaseHead
 OptIntSeq = Optional[Sequence[int]]
 import numpy as np
 from scipy.ndimage.filters import gaussian_filter
-from mmpose.utils import get_all_peaks
+from mmpose.utils import get_all_peaks, get_all_skeletons
+import cv2
 
 
 @MODELS.register_module()
@@ -656,7 +657,7 @@ class LJW_HeatmapHead(BaseHead):
         #         shift_heatmap=test_cfg.get('shift_heatmap', False))
         #     batch_heatmaps = (_batch_heatmaps + _batch_heatmaps_flip) * 0.5
         # else:
-        batch_heatmaps = self.forward(feats)[2]
+        batch_heatmaps = self.forward(feats)
 
         preds = self.decode(batch_heatmaps)
 
@@ -716,14 +717,14 @@ class LJW_HeatmapHead(BaseHead):
         # ----------------------------------------------------------------------------------------------------
         if self.output_form_1:
             losses.update(
-                loss_kt1=self.loss_module(
+                loss_p1=self.loss_module(
                     pred_fields[0][:, :kt1, :, :],
                     gt_heatmaps_1[:, :kt1, :, :],
                     keypoint_weights_1[:, :kt1]
                 ) * 0.2
             )
             losses.update(
-                loss_sk1=self.loss_module(
+                loss_s1=self.loss_module(
                     pred_fields[0][:, kt1:, :, :],
                     gt_heatmaps_1[:, kt1:, :, :],
                     keypoint_weights_1[:, kt1:]
@@ -734,14 +735,14 @@ class LJW_HeatmapHead(BaseHead):
         # ----------------------------------------------------------------------------------------------------
         if self.output_form_2:
             losses.update(
-                loss_kt2=self.loss_module(
+                loss_p2=self.loss_module(
                     pred_fields[1][:, :kt2, :, :],
                     gt_heatmaps_2[:, :kt2, :, :],
                     keypoint_weights_2[:, :kt2]
                 ) * 0.4
             )
             losses.update(
-                loss_sk2=self.loss_module(
+                loss_s2=self.loss_module(
                     pred_fields[1][:, kt2:, :, :],
                     gt_heatmaps_2[:, kt2:, :, :],
                     keypoint_weights_2[:, kt2:]
@@ -752,14 +753,14 @@ class LJW_HeatmapHead(BaseHead):
         # ----------------------------------------------------------------------------------------------------
         if self.output_form_3:
             losses.update(
-                loss_kt3=self.loss_module(
+                loss_p3=self.loss_module(
                     pred_fields[2][:, :kt3, :, :],
                     gt_heatmaps_3[:, :kt3, :, :],
                     keypoint_weights_3[:, :kt3]
                 )
             )
             losses.update(
-                loss_sk3=self.loss_module(
+                loss_s3=self.loss_module(
                     pred_fields[2][:, kt3:, :, :],
                     gt_heatmaps_3[:, kt3:, :, :],
                     keypoint_weights_3[:, kt3:]
@@ -769,69 +770,157 @@ class LJW_HeatmapHead(BaseHead):
 
         # calculate accuracy
         if train_cfg.get('compute_acc', True):
-            # _, avg_acc, _ = pose_pck_accuracy(
-            #     output=to_numpy(pred_fields),
-            #     target=to_numpy(gt_heatmaps),
-            #     mask=to_numpy(keypoint_weights) > 0)
-            # gt_kts_1 = []
-            # pred_kts_1 = []
-            # gt_kts_2 = []
-            # pred_kts_2 = []
-            # gt_kts_3 = []
-            # pred_kts_3 = []
-            # output = to_numpy(pred_fields[2][:, -self.out_channels:, :, :])
+
             for idx, x in enumerate(batch_data_samples):
 
-                gt_kt_1 = [[]] * self.channel_labels[0][0]
+                # -------------------------------------------------------------------------------------------------------
+                # 1
+                # -------------------------------------------------------------------------------------------------------
+                gt_kt_1 = [[] for _ in range(self.channel_labels[0][0])]
                 for kt_idx, [x_, y_, type] in enumerate(x.raw_ann_info['true_points_1']):
-                    gt_kt_1[type - 1] = gt_kt_1[type - 1] + [
-                        [x_ // self.heatmap_scale[0], y_ // self.heatmap_scale[0], kt_idx]]
-                # gt_kts_1.append(gt_kt_1)
+                    gt_kt_1[type - 1].append([x_ / self.heatmap_scale[0], y_ / self.heatmap_scale[0], kt_idx])
 
-                gt_kt_2 = [[]] * self.channel_labels[1][0]
+                output = pred_fields[0][idx, :, :, :].detach().cpu().numpy()
+                heatmap_avg = output[:kt1]
+                pred_kt_1, _ = get_all_peaks(heatmap_avg, sigma=self.channel_labels[0][3], idx_channel=0)
+                tps_1, fps_1, fns_1 = ljw_tower_pose_pack_accuracy(
+                    output=pred_kt_1,
+                    target=gt_kt_1,
+                    sigma=self.channel_labels[0][3] * 2
+                )
+                # paf_avg = output[kt1:]
+                # paf_avg = np.transpose(paf_avg, (1, 2, 0))
+                # paf_avg = cv2.resize(paf_avg, (img_w, img_h), interpolation=cv2.INTER_CUBIC)
+                # for part in range(paf_avg.shape[2]):
+                #     ht = paf_avg[:,:,part]
+                #     r = np.clip(ht, 0, 1) * 255
+                #     g = ht * 0
+                #     b = np.clip(-ht, 0, 1) * 255
+                #     ht = np.array([b, g, r], dtype=np.uint8).transpose(1, 2, 0)
+                #     save_path = r"E:\LJW\Git\mmpose\tools\0_LJW_tools\val\1_{}_{}.jpg".format(part // 2, "xy"[part % 2])
+                #     cv2.imwrite(save_path, ht)
+                # gt_sk_1 = [[] for _ in range(self.channel_labels[0][1])]
+                # for sk_idx, [p1_x, p1_y, p1_t, p2_x, p2_y, p2_t, type] in enumerate(x.raw_ann_info['true_skeletons_1']):
+                #     gt_sk_1[type - 1].append(
+                #         [p1_x, p1_y, p1_t,
+                #          p2_x, p2_y, p2_t,
+                #          type - 1
+                #          ]
+                #     )
+                # all_skeletons_1 = get_all_skeletons(paf_avg, pred_kt_1, img_w, out_form=1, idx_channel=2)
+                # -------------------------------------------------------------------------------------------------------
+                # 2
+                # -------------------------------------------------------------------------------------------------------
+                gt_kt_2 = [[] for _ in range(self.channel_labels[1][0])]
                 for kt_idx, [x_, y_, type] in enumerate(x.raw_ann_info['true_points_2']):
-                    gt_kt_2[type - 1] = gt_kt_2[type - 1] + [
-                        [x_ // self.heatmap_scale[1], y_ // self.heatmap_scale[1], kt_idx]]
-                # gt_kts_2.append(gt_kt_2)
+                    gt_kt_2[type - 1].append([x_ / self.heatmap_scale[1], y_ / self.heatmap_scale[1], kt_idx])
 
-                gt_kt_3 = [[]] * self.channel_labels[2][0]
+                output = pred_fields[1][idx, :, :, :].detach().cpu().numpy()
+                heatmap_avg = output[:kt2]
+                # heatmap_avg = np.transpose(heatmap_avg, (1, 2, 0))
+                # heatmap_avg = cv2.resize(heatmap_avg, (img_w, img_h), interpolation=cv2.INTER_CUBIC)
+
+                pred_kt_2, _ = get_all_peaks(heatmap_avg, sigma=self.channel_labels[1][3], idx_channel=0)
+                tps_2, fps_2, fns_2 = ljw_tower_pose_pack_accuracy(
+                    output=pred_kt_2,
+                    target=gt_kt_2,
+                    sigma=self.channel_labels[1][3] * 2
+                )
+                #
+                # gt_sk_2 = [[] for _ in range(self.channel_labels[1][1])]
+                # for sk_idx, [p1_x, p1_y, p1_t, p2_x, p2_y, p2_t, type] in enumerate(x.raw_ann_info['true_skeletons_2']):
+                #     gt_sk_2[type - 1].append(
+                #         [p1_x / self.heatmap_scale[1], p1_y / self.heatmap_scale[1], p1_t,
+                #          p2_x / self.heatmap_scale[1], p2_y / self.heatmap_scale[1], p2_t,
+                #          type - 1
+                #          ]
+                #     )
+                # img_shape = pred_fields[1][idx, kt1:, :, :].shape[1]
+                # all_skeletons_2 = get_all_skeletons(to_numpy(pred_fields[1][idx, kt2:, :, :]), pred_kt_2, img_shape,
+                #                                     out_form=2)
+
+                # -------------------------------------------------------------------------------------------------------
+                # 3
+                # -------------------------------------------------------------------------------------------------------
+                gt_kt_3 = [[] for _ in range(self.channel_labels[2][0])]
                 for kt_idx, [x_, y_, type] in enumerate(x.raw_ann_info['true_points_3']):
-                    gt_kt_3[type - 1] = gt_kt_3[type - 1] + [
-                        [x_ // self.heatmap_scale[2], y_ // self.heatmap_scale[2], kt_idx]]
-                # gt_kts_3.append(gt_kt_3)
-                pred_kt_3, _ = get_all_peaks(to_numpy(pred_fields[2][idx, :kt3, :, :]), sigma=self.channel_labels[2][3])
+                    gt_kt_3[type - 1].append([x_ / self.heatmap_scale[2], y_ / self.heatmap_scale[2], kt_idx])
 
-                tps, fps, fns = ljw_tower_pose_pack_accuracy(output=pred_kt_3, target=gt_kt_3,
-                                                             sigma=self.channel_labels[2][3]  * 2
-                                                             )
+                output = pred_fields[2][idx, :, :, :].detach().cpu().numpy()
+                heatmap_avg = output[:kt3]
+                # heatmap_avg = np.transpose(heatmap_avg, (1, 2, 0))
+                # heatmap_avg = cv2.resize(heatmap_avg, (img_w, img_h), interpolation=cv2.INTER_CUBIC)
+                #
+                pred_kt_3, _ = get_all_peaks(heatmap_avg, sigma=self.channel_labels[2][3], idx_channel=0)
+                tps_3, fps_3, fns_3 = ljw_tower_pose_pack_accuracy(
+                    output=pred_kt_3,
+                    target=gt_kt_3,
+                    sigma=self.channel_labels[2][3] * 2
+                )
+                # gt_sk_3 = [[] for _ in range(self.channel_labels[2][1])]
+                # for sk_idx, [p1_x, p1_y, p1_t, p2_x, p2_y, p2_t, type] in enumerate(x.raw_ann_info['true_skeletons_3']):
+                #     gt_sk_3[type - 1].append(
+                #         [p1_x / self.heatmap_scale[2], p1_y / self.heatmap_scale[2], p1_t,
+                #          p2_x / self.heatmap_scale[2], p2_y / self.heatmap_scale[2], p2_t,
+                #          type - 1
+                #          ]
+                #     )
+                # img_shape = pred_fields[2][idx, kt1:, :, :].shape[1]
+                # all_skeletons_3 = get_all_skeletons(to_numpy(pred_fields[2][idx, kt3:, :, :]), pred_kt_3, img_shape)
+
+                # -------------------------------------------------------------------------------------------------------
 
                 log_path = r"E:\LJW\Git\mmpose\tools\0_LJW_tools\_pose_acc_log.json"
                 if not os.path.exists(log_path):
                     log_data = {
                         "i": 1,
-                        "tps": tps,
-                        "fps": fps,
-                        "fns": fns,
+                        "tps_1": tps_1,
+                        "fps_1": fps_1,
+                        "fns_1": fns_1,
+                        "tps_2": tps_2,
+                        "fps_2": fps_2,
+                        "fns_2": fns_2,
+                        "tps_3": tps_3,
+                        "fps_3": fps_3,
+                        "fns_3": fns_3,
                     }
                 else:
                     log_data = json.load(open(log_path, "r", encoding="utf-8"), strict=False)
                     log_data['i'] += 1
-                    log_data["tps"] += tps
-                    log_data["fps"] += fps
-                    log_data["fns"] += fns
+                    log_data["tps_1"] += tps_1
+                    log_data["fps_1"] += fps_1
+                    log_data["fns_1"] += fns_1
+                    log_data["tps_2"] += tps_2
+                    log_data["fps_2"] += fps_2
+                    log_data["fns_2"] += fns_2
+                    log_data["tps_3"] += tps_3
+                    log_data["fps_3"] += fps_3
+                    log_data["fns_3"] += fns_3
 
-                precision = log_data["tps"] / max(1, (log_data["tps"] + log_data["fps"]))
-                recall = log_data["tps"] / max(1, (log_data["tps"] + log_data["fns"]))
-                f1_score = 2 * (precision * recall) / max(1e-4, (precision + recall))
-                #
-                # if log_data["i"] == 100:
-                #     os.remove(log_path)
-                # else:
-                #     b = json.dumps(log_data, ensure_ascii=False, indent=4)
-                #     f2 = open(log_path, 'w', encoding='utf-8')
-                #     f2.write(b)
-                #     f2.close()
-                acc_pose = torch.tensor(f1_score, device=feats[0].device)
+                precision_1 = log_data["tps_1"] / max(1, (log_data["tps_1"] + log_data["fps_1"]))
+                recall_1 = log_data["tps_1"] / max(1, (log_data["tps_1"] + log_data["fns_1"]))
+                f1_score_1 = 2 * (precision_1 * recall_1) / max(1e-4, (precision_1 + recall_1))
+
+                precision_2 = log_data["tps_2"] / max(1, (log_data["tps_2"] + log_data["fps_2"]))
+                recall_2 = log_data["tps_2"] / max(1, (log_data["tps_2"] + log_data["fns_2"]))
+                f1_score_2 = 2 * (precision_2 * recall_2) / max(1e-4, (precision_2 + recall_2))
+
+                precision_3 = log_data["tps_3"] / max(1, (log_data["tps_3"] + log_data["fps_3"]))
+                recall_3 = log_data["tps_3"] / max(1, (log_data["tps_3"] + log_data["fns_3"]))
+                f1_score_3 = 2 * (precision_3 * recall_3) / max(1e-4, (precision_3 + recall_3))
+
+                losses.update(pp1=torch.tensor(precision_1, device=feats[0].device))
+                losses.update(pr1=torch.tensor(recall_1, device=feats[0].device))
+                losses.update(pf1=torch.tensor(f1_score_1, device=feats[0].device))
+                losses.update(pp2=torch.tensor(precision_2, device=feats[0].device))
+                losses.update(pr2=torch.tensor(recall_2, device=feats[0].device))
+                losses.update(pf2=torch.tensor(f1_score_2, device=feats[0].device))
+                losses.update(pp3=torch.tensor(precision_3, device=feats[0].device))
+                losses.update(pr3=torch.tensor(recall_3, device=feats[0].device))
+                losses.update(pf3=torch.tensor(f1_score_3, device=feats[0].device))
+
+                acc_pose = torch.tensor(f1_score_1 * 0.15 + f1_score_2 * 0.2 + f1_score_3 * 0.65,
+                                        device=feats[0].device)
                 losses.update(acc_pose=acc_pose)
 
         return losses

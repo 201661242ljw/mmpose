@@ -21,7 +21,6 @@ from ..functional import (oks_nms, soft_oks_nms, transform_ann, transform_pred,
 from ...utils import ljw_tower_pose_pack_accuracy
 
 
-
 @METRICS.register_module()
 class TowerMetric(BaseMetric):
     """COCO pose estimation task evaluation metric.
@@ -529,7 +528,6 @@ class TowerMetric(BaseMetric):
         """
         logger: MMLogger = MMLogger.get_current_instance()
 
-
         # split prediction and gt list
         # preds, gts = zip(*results)
 
@@ -543,52 +541,100 @@ class TowerMetric(BaseMetric):
         # if self.coco is None:
         #     # use converted gt json file to initialize coco helper
         #     logger.info('Converting ground truth to coco format...')
-            # coco_json_path = self.gt_to_coco_json(
-            #     gt_dicts=gts, outfile_prefix=outfile_prefix)
-            # self.coco = COCO(coco_json_path)
+        # coco_json_path = self.gt_to_coco_json(
+        #     gt_dicts=gts, outfile_prefix=outfile_prefix)
+        # self.coco = COCO(coco_json_path)
         if self.gt_converter is not None:
             for id_, ann in self.coco.anns.items():
                 self.coco.anns[id_] = transform_ann(
                     ann, self.gt_converter['num_keypoints'],
                     self.gt_converter['mapping'])
 
-
-
-        stats_names = ["AP",
-                       "AP .5",
-                       "AR .5",
-                       "F1 .5",
-                       "AP .75",
-                       "AR .75",
-                       "F1 .75",
-                       "AP .95",
-                       "AR .95",
-                       "F1 .95"]
-        scores = [0, 0, 0, 0,
-                  0, 0, 0,
-                  0, 0, 0]
+        stats_names = [
+            "AP",
+            "AP_1 .5", "AR_1 .5", "F1_1 .5", "AP_1 .75", "AR_1 .75", "F1_1 .75", "AP_1 .95", "AR_1 .95", "F1_1 .95",
+            "AP_2 .5", "AR_2 .5", "F1_2 .5", "AP_2 .75", "AR_2 .75", "F1_2 .75", "AP_2 .95", "AR_2 .95", "F1_2 .95",
+            "AP_3 .5", "AR_3 .5", "F1_3 .5", "AP_3 .75", "AR_3 .75", "F1_3 .75", "AP_3 .95", "AR_3 .95", "F1_3 .95",
+        ]
+        scores = [0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  ]
         for (idx_, iou_threshold) in enumerate([0.5, 0.75, 0.95]):
-            tps = 0
-            fps = 0
-            fns = 0
+            tps1 = 0
+            fps1 = 0
+            fns1 = 0
+            tps2 = 0
+            fps2 = 0
+            fns2 = 0
+            tps3 = 0
+            fps3 = 0
+            fns3 = 0
+
             for (pred, gt) in results:
-                pred_kt = pred['keypoints']
-
-                gt_kt = [[]] * len(pred_kt)
+                # -----------------------------------------------------------------------------------------------
+                # 1
+                # -----------------------------------------------------------------------------------------------
+                pred_kt_1 = pred['keypoints'][0]
+                gt_kt_1 = [[] for _ in pred_kt_1]
+                for kt_idx, [x_, y_, type] in enumerate(gt['raw_ann_info'][0]['true_points_1']):
+                    gt_kt_1[type - 1].append([x_, y_, kt_idx])
+                tp, fp, fn = ljw_tower_pose_pack_accuracy(pred_kt_1,
+                                                          copy.deepcopy(gt_kt_1),
+                                                          self.sigma * self.heatmap_scale * 2 * 4,
+                                                          iou_threshold=iou_threshold)
+                tps1 += tp
+                fps1 += fp
+                fns1 += fn
+                # -----------------------------------------------------------------------------------------------
+                # 2
+                # -----------------------------------------------------------------------------------------------
+                pred_kt_2 = pred['keypoints'][1]
+                gt_kt_2 = [[] for _ in pred_kt_2]
+                for kt_idx, [x_, y_, type] in enumerate(gt['raw_ann_info'][0]['true_points_2']):
+                    gt_kt_2[type - 1].append([x_, y_, kt_idx])
+                tp, fp, fn = ljw_tower_pose_pack_accuracy(pred_kt_2,
+                                                          copy.deepcopy(gt_kt_2),
+                                                          self.sigma * self.heatmap_scale * 2 * 2,
+                                                          iou_threshold=iou_threshold)
+                tps2 += tp
+                fps2 += fp
+                fns2 += fn
+                # -----------------------------------------------------------------------------------------------
+                # 3
+                # -----------------------------------------------------------------------------------------------
+                pred_kt_3 = pred['keypoints'][2]
+                gt_kt_3 = [[] for _ in pred_kt_3]
                 for kt_idx, [x_, y_, type] in enumerate(gt['raw_ann_info'][0]['true_points_3']):
-                    gt_kt[type - 1] = gt_kt[type - 1] + [[x_ , y_ , kt_idx]]
-                tp, fp, fn = ljw_tower_pose_pack_accuracy(pred_kt, copy.deepcopy(gt_kt), self.sigma * self.heatmap_scale * 2, iou_threshold=iou_threshold)
-                tps += tp
-                fps += fp
-                fns += fn
-
-            precision = tps / max(1, (tps + fps))
-            recall = tps / max(1, (tps + fns))
-            f1_score = 2 * (precision * recall) / max(1e-4, (precision + recall))
-            scores[idx_*3 + 1 ] = precision
-            scores[idx_ *3+2] = recall
-            scores[idx_*3 +3] = f1_score
-        scores[0] =scores[3]
+                    gt_kt_3[type - 1].append([x_, y_, kt_idx])
+                tp, fp, fn = ljw_tower_pose_pack_accuracy(pred_kt_3,
+                                                          copy.deepcopy(gt_kt_3),
+                                                          self.sigma * self.heatmap_scale * 2,
+                                                          iou_threshold=iou_threshold)
+                tps3 += tp
+                fps3 += fp
+                fns3 += fn
+                # -----------------------------------------------------------------------------------------------
+            precision_1 = tps1 / max(1, (tps1 + fps1))
+            recall_1 = tps1 / max(1, (tps1 + fns1))
+            f1_score_1 = 2 * (precision_1 * recall_1) / max(1e-4, (precision_1 + recall_1))
+            precision_2 = tps2 / max(1, (tps2 + fps2))
+            recall_2 = tps2 / max(1, (tps2 + fns2))
+            f1_score_2 = 2 * (precision_2 * recall_2) / max(1e-4, (precision_2 + recall_2))
+            precision_3 = tps3 / max(1, (tps3 + fps3))
+            recall_3 = tps3 / max(1, (tps3 + fns3))
+            f1_score_3 = 2 * (precision_3 * recall_3) / max(1e-4, (precision_3 + recall_3))
+            scores[idx_ * 3 + 1] = precision_1
+            scores[idx_ * 3 + 2] = recall_1
+            scores[idx_ * 3 + 3] = f1_score_1
+            scores[idx_ * 3 + 4] = precision_2
+            scores[idx_ * 3 + 5] = recall_2
+            scores[idx_ * 3 + 6] = f1_score_2
+            scores[idx_ * 3 + 7] = precision_3
+            scores[idx_ * 3 + 8] = recall_3
+            scores[idx_ * 3 + 9] = f1_score_3
+        scores[0] = (scores[3] * 0.15 + scores[6] * 0.2 + scores[9] * 0.65) * 0.8 + (scores[12] * 0.15 + scores[15] * 0.2 + scores[18] * 0.65) * 0.2
         info_str = list(zip(stats_names, scores))
 
         # evaluation results
@@ -600,8 +646,6 @@ class TowerMetric(BaseMetric):
         if tmp_dir is not None:
             tmp_dir.cleanup()
         return eval_results
-
-
 
     def results2json(self, keypoints: Dict[int, list],
                      outfile_prefix: str) -> str:

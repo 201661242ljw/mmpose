@@ -13,7 +13,8 @@ from .utils.post_processing import get_heatmap_maximum
 from .utils.refinement import refine_keypoints, refine_keypoints_dark
 
 from scipy.ndimage.filters import gaussian_filter
-from mmpose.utils import  get_all_peaks
+from mmpose.utils import get_all_peaks
+
 
 # def get_all_peaks(heatmap, sigma):
 #     all_peaks = []
@@ -885,7 +886,7 @@ class LJWHeatmapAndPaf_2(BaseKeypointCodec):
         for [x, y, keypoint_type] in keypoints_2:
             keypoint_type = keypoint_type
             left = int(max(0, x // self.heatmap_scale[1] - 3 * self.sigma_2))
-            right = int(min(self.heatmap_size[3] , x // self.heatmap_scale[1] + 3 * self.sigma_2))
+            right = int(min(self.heatmap_size[3], x // self.heatmap_scale[1] + 3 * self.sigma_2))
             lower = int(max(0, y // self.heatmap_scale[1] - 3 * self.sigma_2))
             upper = int(min(self.heatmap_size[2], y // self.heatmap_scale[1] + 3 * self.sigma_2))
             heatmap = np.zeros([self.heatmap_size[3], self.heatmap_size[2]])
@@ -977,7 +978,7 @@ class LJWHeatmapAndPaf_2(BaseKeypointCodec):
 
         return encoded
 
-    def decode(self, encoded: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def decode(self, ht1, ht2, ht3):
         """Decode keypoint coordinates from heatmaps. The decoded keypoint
         coordinates are in the input image space.
 
@@ -991,16 +992,18 @@ class LJWHeatmapAndPaf_2(BaseKeypointCodec):
             - scores (np.ndarray): The keypoint scores in shape (N, K). It
                 usually represents the confidence of the keypoint prediction
         """
-        heatmaps = encoded.copy()
+        # heatmaps = encoded.copy()
 
         assert self.output_form_3 == True
 
-        # pred_pt = heatmaps[-(self.num_keypoints_3 + self.num_skeletons_3 * 2):-self.num_skeletons_3 * 2, :, :]
-        pred_pt = heatmaps[:self.num_keypoints_3, :, :]
+        pred_pt_1 = ht1[0,:self.num_keypoints_1, :, :]
+        all_peaks_1, all_scroes_1 = get_all_peaks(pred_pt_1, sigma=self.sigma_1, idx_channel=0)
+        pred_pt_2 = ht2[0,:self.num_keypoints_2, :, :]
+        all_peaks_2, all_scroes_2 = get_all_peaks(pred_pt_2, sigma=self.sigma_2, idx_channel=0)
+        pred_pt_3 = ht3[0,:self.num_keypoints_3, :, :]
+        all_peaks_3, all_scroes_3 = get_all_peaks(pred_pt_3, sigma=self.sigma_3, idx_channel=0)
 
-        all_peaks, all_scroes = get_all_peaks(pred_pt, sigma=self.sigma_3)
-
-        return all_peaks, all_scroes
+        return all_peaks_1, all_scroes_1, all_peaks_2, all_scroes_2, all_peaks_3, all_scroes_3
 
         # keypoints, scores = get_heatmap_maximum(heatmaps)
         #

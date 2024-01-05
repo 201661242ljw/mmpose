@@ -38,7 +38,7 @@ class BaseHead(BaseModule, metaclass=ABCMeta):
         """Calculate losses from a batch of inputs and data samples."""
 
     def decode(self, batch_outputs: Union[Tensor,
-                                          Tuple[Tensor]]) -> InstanceList:
+    Tuple[Tensor]]) -> InstanceList:
         """Decode keypoints from outputs.
 
         Args:
@@ -52,7 +52,7 @@ class BaseHead(BaseModule, metaclass=ABCMeta):
 
         def _pack_and_call(args, func):
             if not isinstance(args, tuple):
-                args = (args, )
+                args = (args,)
             return func(*args)
 
         if self.decoder is None:
@@ -70,10 +70,11 @@ class BaseHead(BaseModule, metaclass=ABCMeta):
             batch_keypoints = []
             batch_scores = []
             for outputs in batch_output_np:
-                keypoints, scores = _pack_and_call(outputs,
-                                                   self.decoder.decode)
-                batch_keypoints.append(keypoints)
-                batch_scores.append(scores)
+                keypoints_1, scores_1, keypoints_2, scores_2, keypoints_3, scores_3 = _pack_and_call(outputs,
+                                                                                                     self.decoder.decode)
+
+                batch_keypoints.append([keypoints_1, keypoints_2, keypoints_3])
+                batch_scores.append([scores_1,scores_2,scores_3])
 
         preds = [
             InstanceData(keypoints=keypoints, keypoint_scores=scores)

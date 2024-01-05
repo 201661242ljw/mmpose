@@ -23,6 +23,7 @@ from mmpose.utils.typing import (ConfigType, ForwardResults, OptConfigType,
                                  SampleList)
 
 import colorsys
+from mmpose.utils import draw_tower, get_all_skeletons
 
 
 class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
@@ -169,35 +170,10 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
                 return self.predict(inputs, data_samples)
 
             outputs = self._forward(inputs)[2]
-            saturation = 1.0  # 最大饱和度
-            value = 1.0  # 最大明度
 
-            bgr_colors = []
-            hue_steps = 39  # 均分的色调数量
-            for i in range(hue_steps):
-                hue = i / hue_steps  # 计算色调
-                rgb_color = colorsys.hsv_to_rgb(hue, saturation, value)  # 转换为RGB颜色
-                bgr_color = tuple([round(x * 255) for x in reversed(rgb_color)])  # 转换为BGR颜色
-                bgr_colors.append(bgr_color)
-            sk_colors = bgr_colors
-
-            hue_steps = 14  # 均分的色调数量
-            for i in range(hue_steps):
-                hue = i / hue_steps  # 计算色调
-                rgb_color = colorsys.hsv_to_rgb(hue, saturation, value)  # 转换为RGB颜色
-                bgr_color = tuple([round(x * 255) for x in reversed(rgb_color)])  # 转换为BGR颜色
-                bgr_colors.append(bgr_color)
-            pt_colors = bgr_colors
 
             for (idx, data_sample) in enumerate(data_samples):
                 img_name = os.path.basename(data_sample.img_path)
-                # if not "04_2_066_head_have_2_0" in img_name:
-                #     continue
-                save_dir = r"E:\LJW\Git\mmpose\tools\0_LJW_tools\predict_show\{}/{}".format(
-                    open(r"E:\LJW\Git\mmpose\tools\save_dir.txt", "r", encoding="utf-8").read().strip(),
-                    img_name.split(".")[0])
-                if not os.path.exists(save_dir):
-                    os.makedirs(save_dir)
 
                 tensor = inputs[idx, :, :, :].detach().cpu()
                 img = tensor.numpy()
@@ -205,12 +181,15 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
                 img = img.astype('uint8')
                 img = img[:, :, ::-1]  # BGR to RGB
                 img = np.ascontiguousarray(img)  # channel-first to row-first
-                org_img_path = os.path.join(save_dir, img_name)
-                # cv2.imwrite(org_img_path, img)
 
+                save_dir = r"E:\LJW\Git\mmpose\tools\0_LJW_tools\predict_show\{}/{}".format(
+                    open(r"E:\LJW\Git\mmpose\tools\save_dir.txt", "r", encoding="utf-8").read().strip(),
+                    img_name.split(".")[0])
+                if not os.path.exists(save_dir):
+                    os.makedirs(save_dir)
                 kt_num = 14
                 sk_num = 39
-                sigma = 4
+                sigma = 1.5 * 4
 
                 output = outputs[idx, :, :, :].detach().cpu().numpy()[-(sk_num * 2 + kt_num):]
                 heatmap_avg = output[:kt_num]
@@ -283,9 +262,7 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
                             limbSeq[(i - kt_num) // 2][0],
                             limbSeq[(i - kt_num) // 2][1])
                                                  )
-
                     ht = cv2.resize(ht, (img.shape[1], img.shape[0]))
-
                     cv2.imwrite(save_path, (ht * 0.75 + img * 0.25).astype(np.uint8))
 
                 # for part in range(heatmap_avg.shape[2]):
@@ -312,110 +289,113 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
                 #     all_peaks.append(peaks_with_score_and_id)
                 #     peak_counter += len(peaks)
 
-                pt_img = copy.deepcopy(img)
-                pt_img = pt_img // 4
-                for (all_peak, pt_color) in zip(all_peaks, pt_colors):
-                    for pt in all_peak:
-                        x = pt[0]
-                        y = pt[1]
-                        pt_img = cv2.circle(pt_img, center=(x, y), color=pt_color, radius=5, thickness=-1)
-
-                save_path = os.path.join(save_dir, "0_pts.jpg")
-
-                cv2.imwrite(save_path, pt_img)
-
-                connection_all = []
-                special_connection = []
-                mid_num = 10
-
-                for k in range(len(mapIdx)):
-                    score_mid = paf_avg[:, :, [x for x in mapIdx[k]]]
-
-                    p1_index = limbSeq[k][0]
-                    p2_index = limbSeq[k][1]
-                    # if p1_index == 0:
-                    #     p1_index = 13
-                    # else:
-                    #     p1_index -= 1
-                    # if p2_index == 0:
-                    #     p2_index = 13
-                    # else:
-                    #     p2_index -= 1
-
-                    candA = all_peaks[p1_index]
-                    candB = all_peaks[p2_index]
-                    nA = len(candA)
-                    nB = len(candB)
-
-                    # indexA, indexB = limbSeq[k]
-                    if (nA != 0 and nB != 0):
-                        for i in range(nA):
-                            connection_candidate = None
-                            max_temp = 0
-                            for j in range(nB):
-                                vec = np.subtract(candB[j][:2], candA[i][:2])
-                                norm = math.sqrt(vec[0] * vec[0] + vec[1] * vec[1])
-                                if norm == 0:
-                                    continue
-                                norm = max(0.001, norm)
-                                vec = np.divide(vec, norm)
-
-                                startend = list(zip(np.linspace(candA[i][0], candB[j][0], num=mid_num),
-                                                    np.linspace(candA[i][1], candB[j][1], num=mid_num)))
-
-                                vec_x = np.array([score_mid[int(round(startend[I][1])), int(round(startend[I][0])), 0] \
-                                                  for I in range(len(startend))])
-                                vec_y = np.array([score_mid[int(round(startend[I][1])), int(round(startend[I][0])), 1] \
-                                                  for I in range(len(startend))])
-
-                                score_midpts = np.multiply(vec_x, vec[0]) + np.multiply(vec_y, vec[1])
-                                score_with_dist_prior = sum(score_midpts) / len(score_midpts) + min(
-                                    0.5 * img.shape[0] / norm - 1, 0)
-                                criterion1 = len(np.nonzero(score_midpts > thre2)[0]) > 0.8 * len(score_midpts)
-                                criterion2 = score_with_dist_prior > 0
-                                if criterion1 and criterion2:
-                                    # pt1_type,pt1_id,pt1_x,pt1_y
-                                    # pt2_type,pt2_id,pt2_x,pt2_y
-                                    # length, vec_x, vec_y, skeleton_type,skeleton_score, skeelton_and_pts_score
-                                    skeleton = [limbSeq[k][0] + 1, candA[i][2], candA[i][0], candA[i][1],
-                                                limbSeq[k][1] + 1, candB[j][2], candB[j][0], candB[j][1],
-                                                norm, vec[0], vec[1], k + 1, score_with_dist_prior,
-                                                score_with_dist_prior + candA[i][2] + candB[j][2]]
-                                    # if k == 1:
-                                    #     need_record = True
-                                    #     if len(special_connection) != 0:
-                                    #         for (idx, skeleton_temp) in enumerate(special_connection):
-                                    #             if skeleton_temp[1] == candA[i][2]:
-                                    #                 if vec[0] * skeleton_temp[9] + vec[1] * skeleton_temp[10] > 0.9:
-                                    #                     need_record = False
-                                    #                     if norm < skeleton_temp[8]:
-                                    #                         special_connection[idx] = skeleton
-                                    #     if need_record:
-                                    #         special_connection.append(skeleton)
-                                    # else:
-                                    #     connection_all.append(skeleton)
-                                    if skeleton[-1] > max_temp:
-                                        connection_candidate = skeleton
-                                        max_temp = skeleton[-1]
-                            if connection_candidate is not None:
-                                connection_all.append(connection_candidate)
-
-                connection_all = connection_all + special_connection
-                pt_drawn = []
-                img = img // 4
-                for [pt1_type, pt1_id, pt1_x, pt1_y, pt2_type, pt2_id, pt2_x, pt2_y, length, vec_x, vec_y,
-                     skeleton_type, skeleton_score, skeelton_and_pts_score] in connection_all:
-                    if not pt1_id in pt_drawn:
-                        img = cv2.circle(img, center=(pt1_x, pt1_y), radius=5, color=pt_colors[pt1_type - 1],
-                                         thickness=-1)
-                        pt_drawn.append(pt1_id)
-                    if not pt2_id in pt_drawn:
-                        img = cv2.circle(img, center=(pt2_x, pt2_y), radius=5, color=pt_colors[pt2_type - 1],
-                                         thickness=-1)
-                        pt_drawn.append(pt2_id)
-                    img = cv2.line(img, (pt1_x, pt1_y), (pt2_x, pt2_y), thickness=2,
-                                   color=sk_colors[skeleton_type - 1])
-                cv2.imwrite(os.path.join(save_dir, "0_show.jpg"), img)
+                all_connection = get_all_skeletons(paf_avg, all_peaks, img.shape[0], idx_channel = 2)
+                draw_tower(all_connection, img, save_dir, all_peaks)
+                a = 1
+                # pt_img = copy.deepcopy(img)
+                # pt_img = pt_img // 4
+                # for (all_peak, pt_color) in zip(all_peaks, pt_colors):
+                #     for pt in all_peak:
+                #         x = pt[0]
+                #         y = pt[1]
+                #         pt_img = cv2.circle(pt_img, center=(x, y), color=pt_color, radius=5, thickness=-1)
+                #
+                # save_path = os.path.join(save_dir, "0_pts.jpg")
+                #
+                # cv2.imwrite(save_path, pt_img)
+                #
+                # all_connection = []
+                # special_connection = []
+                # mid_num = 10
+                #
+                # for k in range(len(mapIdx)):
+                #     score_mid = paf_avg[:, :, [x for x in mapIdx[k]]]
+                #
+                #     p1_index = limbSeq[k][0]
+                #     p2_index = limbSeq[k][1]
+                #     # if p1_index == 0:
+                #     #     p1_index = 13
+                #     # else:
+                #     #     p1_index -= 1
+                #     # if p2_index == 0:
+                #     #     p2_index = 13
+                #     # else:
+                #     #     p2_index -= 1
+                #
+                #     candA = all_peaks[p1_index]
+                #     candB = all_peaks[p2_index]
+                #     nA = len(candA)
+                #     nB = len(candB)
+                #
+                #     # indexA, indexB = limbSeq[k]
+                #     if (nA != 0 and nB != 0):
+                #         for i in range(nA):
+                #             connection_candidate = None
+                #             max_temp = 0
+                #             for j in range(nB):
+                #                 vec = np.subtract(candB[j][:2], candA[i][:2])
+                #                 norm = math.sqrt(vec[0] * vec[0] + vec[1] * vec[1])
+                #                 if norm == 0:
+                #                     continue
+                #                 norm = max(0.001, norm)
+                #                 vec = np.divide(vec, norm)
+                #
+                #                 startend = list(zip(np.linspace(candA[i][0], candB[j][0], num=mid_num),
+                #                                     np.linspace(candA[i][1], candB[j][1], num=mid_num)))
+                #
+                #                 vec_x = np.array([score_mid[int(round(startend[I][1])), int(round(startend[I][0])), 0] \
+                #                                   for I in range(len(startend))])
+                #                 vec_y = np.array([score_mid[int(round(startend[I][1])), int(round(startend[I][0])), 1] \
+                #                                   for I in range(len(startend))])
+                #
+                #                 score_midpts = np.multiply(vec_x, vec[0]) + np.multiply(vec_y, vec[1])
+                #                 score_with_dist_prior = sum(score_midpts) / len(score_midpts) + min(
+                #                     0.5 * img.shape[0] / norm - 1, 0)
+                #                 criterion1 = len(np.nonzero(score_midpts > thre2)[0]) > 0.8 * len(score_midpts)
+                #                 criterion2 = score_with_dist_prior > 0
+                #                 if criterion1 and criterion2:
+                #                     # pt1_type,pt1_id,pt1_x,pt1_y
+                #                     # pt2_type,pt2_id,pt2_x,pt2_y
+                #                     # length, vec_x, vec_y, skeleton_type,skeleton_score, skeelton_and_pts_score
+                #                     skeleton = [limbSeq[k][0] + 1, candA[i][2], candA[i][0], candA[i][1],
+                #                                 limbSeq[k][1] + 1, candB[j][2], candB[j][0], candB[j][1],
+                #                                 norm, vec[0], vec[1], k + 1, score_with_dist_prior,
+                #                                 score_with_dist_prior + candA[i][2] + candB[j][2]]
+                #                     # if k == 1:
+                #                     #     need_record = True
+                #                     #     if len(special_connection) != 0:
+                #                     #         for (idx, skeleton_temp) in enumerate(special_connection):
+                #                     #             if skeleton_temp[1] == candA[i][2]:
+                #                     #                 if vec[0] * skeleton_temp[9] + vec[1] * skeleton_temp[10] > 0.9:
+                #                     #                     need_record = False
+                #                     #                     if norm < skeleton_temp[8]:
+                #                     #                         special_connection[idx] = skeleton
+                #                     #     if need_record:
+                #                     #         special_connection.append(skeleton)
+                #                     # else:
+                #                     #     all_connection.append(skeleton)
+                #                     if skeleton[-1] > max_temp:
+                #                         connection_candidate = skeleton
+                #                         max_temp = skeleton[-1]
+                #             if connection_candidate is not None:
+                #                 all_connection.append(connection_candidate)
+                #
+                # all_connection = all_connection + special_connection
+                # pt_drawn = []
+                # img = img // 4
+                # for [pt1_type, pt1_id, pt1_x, pt1_y, pt2_type, pt2_id, pt2_x, pt2_y, length, vec_x, vec_y,
+                #      skeleton_type, skeleton_score, skeelton_and_pts_score] in all_connection:
+                #     if not pt1_id in pt_drawn:
+                #         img = cv2.circle(img, center=(pt1_x, pt1_y), radius=5, color=pt_colors[pt1_type - 1],
+                #                          thickness=-1)
+                #         pt_drawn.append(pt1_id)
+                #     if not pt2_id in pt_drawn:
+                #         img = cv2.circle(img, center=(pt2_x, pt2_y), radius=5, color=pt_colors[pt2_type - 1],
+                #                          thickness=-1)
+                #         pt_drawn.append(pt2_id)
+                #     img = cv2.line(img, (pt1_x, pt1_y), (pt2_x, pt2_y), thickness=2,
+                #                    color=sk_colors[skeleton_type - 1])
+                # cv2.imwrite(os.path.join(save_dir, "0_show.jpg"), img)
             # exit()
         else:
             raise RuntimeError(f'Invalid mode "{mode}". '

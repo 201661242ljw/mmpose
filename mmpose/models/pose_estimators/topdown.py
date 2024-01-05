@@ -1,7 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from itertools import zip_longest
 from typing import Optional
-
+import numpy
+import numpy as np
 from torch import Tensor
 
 from mmpose.registry import MODELS
@@ -151,12 +152,22 @@ class TopdownPoseEstimator(BasePoseEstimator):
             input_scale = data_sample.metainfo['input_scale']
             input_size = data_sample.metainfo['input_size']
 
-            for list_idx in range(len(pred_instances.keypoints)):
-                for kt_idx in range(len(pred_instances.keypoints[list_idx])):
-                    [x, y, s, id_] = pred_instances.keypoints[list_idx][kt_idx]
-                    x *= 4
-                    y *= 4
-                    pred_instances.keypoints[list_idx][kt_idx] = [x, y, s, id_]
+            for form_idx, kts in enumerate(pred_instances.keypoints):
+                for list_idx in range(len(kts)):
+                    a = np.array(pred_instances.keypoints[form_idx][list_idx])
+                    if a.shape[0] != 0:
+                        a[:, :2] *= [16, 8, 4][form_idx]
+                    pred_instances.keypoints[form_idx][list_idx] = a.tolist()
+
+            # pred_instances.keypoints = kts.tolist()
+            # #
+            # #
+            # for list_idx in range(len(pred_instances.keypoints)):
+            #     for kt_idx in range(len(pred_instances.keypoints[list_idx])):
+            #         [x, y, s, id_] = pred_instances.keypoints[list_idx][kt_idx]
+            #         x *= 4
+            #         y *= 4
+            #         pred_instances.keypoints[list_idx][kt_idx] = [x, y, s, id_]
 
             # if not pred_instances.keypoints.shape[1] == 0:
             #     pred_instances.keypoints[..., :2] = pred_instances.keypoints[...,

@@ -1204,7 +1204,7 @@ def get_only_one_sample():
                 img_id += 1
                 ann_id += 1
                 num += 1
-                if num > 3:
+                if num > 2:
                     break
 
             out_json_path = r"{}/{}/anns/tower_keypoints_{}_2.json".format(src_dir, input_size, dataset)
@@ -1243,9 +1243,9 @@ if __name__ == '__main__':
         bgr_colors.append(bgr_color)
     pt_colors = bgr_colors
 
-    get_complex_skeletons()
-    main()
-    step2()
+    # get_complex_skeletons()
+    # main()
+    # step2()
     get_finale_ann()
     # get_only_one_sample()
     # get_sample()
