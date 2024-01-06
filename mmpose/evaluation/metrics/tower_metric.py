@@ -97,7 +97,7 @@ class TowerMetric(BaseMetric):
     default_prefix: Optional[str] = 'coco'
 
     def __init__(self,
-                 sigma: float = 2.0,
+                 sigma,
 
                  heatmap_scale: int = 4,
                  ann_file: Optional[str] = None,
@@ -552,9 +552,9 @@ class TowerMetric(BaseMetric):
 
         stats_names = [
             "AP",
-            "AP_1 .5", "AR_1 .5", "F1_1 .5", "AP_1 .75", "AR_1 .75", "F1_1 .75", "AP_1 .95", "AR_1 .95", "F1_1 .95",
-            "AP_2 .5", "AR_2 .5", "F1_2 .5", "AP_2 .75", "AR_2 .75", "F1_2 .75", "AP_2 .95", "AR_2 .95", "F1_2 .95",
-            "AP_3 .5", "AR_3 .5", "F1_3 .5", "AP_3 .75", "AR_3 .75", "F1_3 .75", "AP_3 .95", "AR_3 .95", "F1_3 .95",
+            "AP_1 .50", "AR_1 .50", "F1_1 .50", "AP_2 .50", "AR_2 .50", "F1_2 .50", "AP_3 .50", "AR_3 .50", "F1_3 .50",
+            "AP_1 .75", "AR_1 .75", "F1_1 .75", "AP_2 .75", "AR_2 .75", "F1_2 .75", "AP_3 .75", "AR_3 .75", "F1_3 .75",
+            "AP_1 .95", "AR_1 .95", "F1_1 .95", "AP_2 .95", "AR_2 .95", "F1_2 .95", "AP_3 .95", "AR_3 .95", "F1_3 .95",
         ]
         scores = [0,
                   0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -582,7 +582,7 @@ class TowerMetric(BaseMetric):
                     gt_kt_1[type - 1].append([x_, y_, kt_idx])
                 tp, fp, fn = ljw_tower_pose_pack_accuracy(pred_kt_1,
                                                           copy.deepcopy(gt_kt_1),
-                                                          self.sigma * self.heatmap_scale * 2 * 4,
+                                                          self.sigma[0] * self.heatmap_scale * 2 * 4,
                                                           iou_threshold=iou_threshold)
                 tps1 += tp
                 fps1 += fp
@@ -596,7 +596,7 @@ class TowerMetric(BaseMetric):
                     gt_kt_2[type - 1].append([x_, y_, kt_idx])
                 tp, fp, fn = ljw_tower_pose_pack_accuracy(pred_kt_2,
                                                           copy.deepcopy(gt_kt_2),
-                                                          self.sigma * self.heatmap_scale * 2 * 2,
+                                                          self.sigma[1] * self.heatmap_scale * 2 * 2,
                                                           iou_threshold=iou_threshold)
                 tps2 += tp
                 fps2 += fp
@@ -610,7 +610,7 @@ class TowerMetric(BaseMetric):
                     gt_kt_3[type - 1].append([x_, y_, kt_idx])
                 tp, fp, fn = ljw_tower_pose_pack_accuracy(pred_kt_3,
                                                           copy.deepcopy(gt_kt_3),
-                                                          self.sigma * self.heatmap_scale * 2,
+                                                          self.sigma[2] * self.heatmap_scale * 2,
                                                           iou_threshold=iou_threshold)
                 tps3 += tp
                 fps3 += fp
@@ -625,16 +625,17 @@ class TowerMetric(BaseMetric):
             precision_3 = tps3 / max(1, (tps3 + fps3))
             recall_3 = tps3 / max(1, (tps3 + fns3))
             f1_score_3 = 2 * (precision_3 * recall_3) / max(1e-4, (precision_3 + recall_3))
-            scores[idx_ * 3 + 1] = precision_1
-            scores[idx_ * 3 + 2] = recall_1
-            scores[idx_ * 3 + 3] = f1_score_1
-            scores[idx_ * 3 + 4] = precision_2
-            scores[idx_ * 3 + 5] = recall_2
-            scores[idx_ * 3 + 6] = f1_score_2
-            scores[idx_ * 3 + 7] = precision_3
-            scores[idx_ * 3 + 8] = recall_3
-            scores[idx_ * 3 + 9] = f1_score_3
-        scores[0] = (scores[3] * 0.15 + scores[6] * 0.2 + scores[9] * 0.65) * 0.8 + (scores[12] * 0.15 + scores[15] * 0.2 + scores[18] * 0.65) * 0.2
+            scores[idx_ * 9 + 1] = precision_1
+            scores[idx_ * 9 + 2] = recall_1
+            scores[idx_ * 9 + 3] = f1_score_1
+            scores[idx_ * 9 + 4] = precision_2
+            scores[idx_ * 9 + 5] = recall_2
+            scores[idx_ * 9 + 6] = f1_score_2
+            scores[idx_ * 9 + 7] = precision_3
+            scores[idx_ * 9 + 8] = recall_3
+            scores[idx_ * 9 + 9] = f1_score_3
+        scores[0] = (scores[3] * 0.15 + scores[6] * 0.2 + scores[9] * 0.65) * 0.8 + (
+                    scores[12] * 0.15 + scores[15] * 0.2 + scores[18] * 0.65) * 0.2
         info_str = list(zip(stats_names, scores))
 
         # evaluation results

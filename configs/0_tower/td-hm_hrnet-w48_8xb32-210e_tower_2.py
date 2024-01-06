@@ -307,9 +307,9 @@ test_dataloader = dict(
 
 val_evaluator = dict(
     type='TowerMetric',
-    sigma=sigma_3,
+    sigma=[sigma_1,sigma_2,sigma_3],
     ann_file=data_root + 'anns/tower_keypoints_val_2.json')
 test_evaluator = dict(
     type='TowerMetric',
-    sigma=sigma_3,
+    sigma=[sigma_1,sigma_2,sigma_3],
     ann_file=data_root + 'anns/tower_keypoints_test_2.json')
