@@ -69,16 +69,19 @@ class BaseHead(BaseModule, metaclass=ABCMeta):
             batch_output_np = to_numpy(batch_outputs, unzip=True)
             batch_keypoints = []
             batch_scores = []
+            batch_skeletons = []
             for outputs in batch_output_np:
-                keypoints_1, scores_1, keypoints_2, scores_2, keypoints_3, scores_3 = _pack_and_call(outputs,
+                keypoints_1, scores_1, all_skeletons_1, keypoints_2, scores_2,all_skeletons_2, keypoints_3, scores_3, all_skeletons_3 = _pack_and_call(outputs,
                                                                                                      self.decoder.decode)
 
                 batch_keypoints.append([keypoints_1, keypoints_2, keypoints_3])
                 batch_scores.append([scores_1,scores_2,scores_3])
+                batch_skeletons.append([all_skeletons_1,all_skeletons_2, all_skeletons_3])
+
 
         preds = [
-            InstanceData(keypoints=keypoints, keypoint_scores=scores)
-            for keypoints, scores in zip(batch_keypoints, batch_scores)
+            InstanceData(keypoints=keypoints, keypoint_scores=scores, skeletons=skeletons)
+            for keypoints, scores, skeletons in zip(batch_keypoints, batch_scores, batch_skeletons)
         ]
 
         return preds

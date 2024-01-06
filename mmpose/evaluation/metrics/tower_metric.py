@@ -18,7 +18,7 @@ from mmpose.structures.bbox import bbox_xyxy2xywh
 from ..functional import (oks_nms, soft_oks_nms, transform_ann, transform_pred,
                           transform_sigmas)
 
-from ...utils import ljw_tower_pose_pack_accuracy
+from ...utils import ljw_tower_pose_pack_accuracy, ljw_tower_skeleton_accuracy
 
 
 @METRICS.register_module()
@@ -216,6 +216,8 @@ class TowerMetric(BaseMetric):
             keypoints = data_sample['pred_instances']['keypoints']
             # [N, K], the scores for all keypoints of all instances
             keypoint_scores = data_sample['pred_instances']['keypoint_scores']
+
+            skeletons = data_sample['pred_instances']['skeletons']
             # assert keypoint_scores.shape == keypoints.shape[:2]
 
             # parse prediction results
@@ -225,6 +227,7 @@ class TowerMetric(BaseMetric):
 
             pred['keypoints'] = keypoints
             pred['keypoint_scores'] = keypoint_scores
+            pred['skeletons'] = skeletons
             pred['category_id'] = data_sample.get('category_id', 1)
             if 'bboxes' in data_sample['pred_instances']:
                 pred['bbox'] = bbox_xyxy2xywh(
@@ -552,15 +555,40 @@ class TowerMetric(BaseMetric):
 
         stats_names = [
             "AP",
-            "AP_1 .50", "AR_1 .50", "F1_1 .50", "AP_2 .50", "AR_2 .50", "F1_2 .50", "AP_3 .50", "AR_3 .50", "F1_3 .50",
-            "AP_1 .75", "AR_1 .75", "F1_1 .75", "AP_2 .75", "AR_2 .75", "F1_2 .75", "AP_3 .75", "AR_3 .75", "F1_3 .75",
-            "AP_1 .95", "AR_1 .95", "F1_1 .95", "AP_2 .95", "AR_2 .95", "F1_2 .95", "AP_3 .95", "AR_3 .95", "F1_3 .95",
+
+            "AP_1 .50", "AR_1 .50", "F1_1 .50",
+            "AP_2 .50", "AR_2 .50", "F1_2 .50",
+            "AP_3 .50", "AR_3 .50", "F1_3 .50",
+            "AP_sk .50", "AR_sk .50", "F1_sk .50",
+
+            "AP_1 .75", "AR_1 .75", "F1_1 .75",
+            "AP_2 .75", "AR_2 .75", "F1_2 .75",
+            "AP_3 .75", "AR_3 .75", "F1_3 .75",
+            "AP_sk .75", "AR_sk .75", "F1_sk .75",
+
+            "AP_1 .95", "AR_1 .95", "F1_1 .95",
+            "AP_2 .95", "AR_2 .95", "F1_2 .95",
+            "AP_3 .95", "AR_3 .95", "F1_3 .95",
+            "AP_sk .95", "AR_sk .95", "F1_sk .95",
         ]
-        scores = [0,
-                  0, 0, 0, 0, 0, 0, 0, 0, 0,
-                  0, 0, 0, 0, 0, 0, 0, 0, 0,
-                  0, 0, 0, 0, 0, 0, 0, 0, 0,
-                  ]
+        scores = [
+            0,
+
+            0, 0, 0,
+            0, 0, 0,
+            0, 0, 0,
+            0, 0, 0,
+
+            0, 0, 0,
+            0, 0, 0,
+            0, 0, 0,
+            0, 0, 0,
+
+            0, 0, 0,
+            0, 0, 0,
+            0, 0, 0,
+            0, 0, 0,
+        ]
         for (idx_, iou_threshold) in enumerate([0.5, 0.75, 0.95]):
             tps1 = 0
             fps1 = 0
@@ -571,6 +599,9 @@ class TowerMetric(BaseMetric):
             tps3 = 0
             fps3 = 0
             fns3 = 0
+            tps_sk = 0
+            fps_sk = 0
+            fns_sk = 0
 
             for (pred, gt) in results:
                 # -----------------------------------------------------------------------------------------------
@@ -616,26 +647,54 @@ class TowerMetric(BaseMetric):
                 fps3 += fp
                 fns3 += fn
                 # -----------------------------------------------------------------------------------------------
+                # skeletons                
+                # -----------------------------------------------------------------------------------------------
+                pred_sk_3 = pred['skeletons'][2]
+                gt_sk_3 = [[] for _ in pred_sk_3]
+                for sk_idx, [p1_x, p1_y, t_1, p2_x, p2_y, t_2, type] in enumerate(
+                        gt['raw_ann_info'][0]['true_skeletons_3']):
+                    gt_sk_3[type - 1].append([p1_x, p1_y, t_1, p2_x, p2_y, t_2, type])
+                tp, fp, fn = ljw_tower_skeleton_accuracy(pred_sk_3,
+                                                         copy.deepcopy(gt_sk_3),
+                                                         self.sigma[2] * self.heatmap_scale * 2,
+                                                         iou_threshold)
+                tps_sk += tp
+                fps_sk += fp
+                fns_sk += fn
+
+                # -----------------------------------------------------------------------------------------------
+
             precision_1 = tps1 / max(1, (tps1 + fps1))
             recall_1 = tps1 / max(1, (tps1 + fns1))
             f1_score_1 = 2 * (precision_1 * recall_1) / max(1e-4, (precision_1 + recall_1))
+
             precision_2 = tps2 / max(1, (tps2 + fps2))
             recall_2 = tps2 / max(1, (tps2 + fns2))
             f1_score_2 = 2 * (precision_2 * recall_2) / max(1e-4, (precision_2 + recall_2))
+
             precision_3 = tps3 / max(1, (tps3 + fps3))
             recall_3 = tps3 / max(1, (tps3 + fns3))
             f1_score_3 = 2 * (precision_3 * recall_3) / max(1e-4, (precision_3 + recall_3))
-            scores[idx_ * 9 + 1] = precision_1
-            scores[idx_ * 9 + 2] = recall_1
-            scores[idx_ * 9 + 3] = f1_score_1
-            scores[idx_ * 9 + 4] = precision_2
-            scores[idx_ * 9 + 5] = recall_2
-            scores[idx_ * 9 + 6] = f1_score_2
-            scores[idx_ * 9 + 7] = precision_3
-            scores[idx_ * 9 + 8] = recall_3
-            scores[idx_ * 9 + 9] = f1_score_3
-        scores[0] = (scores[3] * 0.15 + scores[6] * 0.2 + scores[9] * 0.65) * 0.8 + (
-                    scores[12] * 0.15 + scores[15] * 0.2 + scores[18] * 0.65) * 0.2
+
+            precision_sk = tps_sk / max(1, (tps_sk + fps_sk))
+            recall_sk = tps_sk / max(1, (tps_sk + fns_sk))
+            f1_score_sk = 2 * (precision_sk * recall_sk) / max(1e-4, (precision_sk + recall_sk))
+
+            scores[idx_ * 12 + 1] = precision_1
+            scores[idx_ * 12 + 2] = recall_1
+            scores[idx_ * 12 + 3] = f1_score_1
+            scores[idx_ * 12 + 4] = precision_2
+            scores[idx_ * 12 + 5] = recall_2
+            scores[idx_ * 12 + 6] = f1_score_2
+            scores[idx_ * 12 + 7] = precision_3
+            scores[idx_ * 12 + 8] = recall_3
+            scores[idx_ * 12 + 9] = f1_score_3
+            scores[idx_ * 12 + 10] = precision_sk
+            scores[idx_ * 12 + 11] = recall_sk
+            scores[idx_ * 12 + 12] = f1_score_sk
+
+        scores[0] = ((scores[3] * 0.15 + scores[6] * 0.2 + scores[9] * 0.35 + scores[12] * 0.3) * 0.8 +
+                     (scores[15] * 0.15 + scores[18] * 0.2 + scores[21] * 0.65 + scores[24] * 0.3) * 0.2)
         info_str = list(zip(stats_names, scores))
 
         # evaluation results

@@ -10,7 +10,7 @@ import cv2
 import os
 
 
-def get_all_peaks(heatmap, sigma, idx_channel=2):
+def get_all_peaks(heatmap, sigma, idx_channel=2, upscale=None):
     all_peaks = []
     all_scores = []
     peak_counter = 0
@@ -40,17 +40,24 @@ def get_all_peaks(heatmap, sigma, idx_channel=2):
         peak_id = range(peak_counter, peak_counter + len(peaks))
         peaks_with_score_and_id = [peaks_with_score[i] + (peak_id[i],) for i in range(len(peak_id))]
 
+        if len(peaks_with_score_and_id) != 0 and upscale != None:
+            peaks_with_score_and_id = np.array(peaks_with_score_and_id)
+            peaks_with_score_and_id[:, :2] *= upscale
+            peaks_with_score_and_id = peaks_with_score_and_id.astype(np.int32).tolist()
         all_peaks.append(peaks_with_score_and_id)
         all_scores.append([peaks_with_score[i][-1] for i in range(len(peak_id))])
         peak_counter += len(peaks)
     return all_peaks, all_scores
 
 
-def get_all_skeletons(paf_ht, all_peaks, img_shape, idx_channel=0, out_form=3):
+def get_all_skeletons(paf_ht, all_peaks, img_shape, idx_channel=0, out_form=3, upscale=None):
     thre2 = 0.05
 
-    if idx_channel != 2:
+    if idx_channel == 0:
         paf_ht = np.transpose(paf_ht, (1, 2, 0))
+    if upscale is not None:
+        paf_ht = cv2.resize(paf_ht, (paf_ht.shape[1] * upscale, paf_ht.shape[0] * upscale),
+                            interpolation=cv2.INTER_CUBIC)
 
     if out_form == 3:
         limbSeq = [
@@ -192,7 +199,7 @@ def draw_tower(all_connection, img, save_dir, all_peaks):
                 pt_drawn.append(pt2_id)
             img = cv2.line(img, (pt1_x, pt1_y), (pt2_x, pt2_y), thickness=2,
                            color=sk_colors[skeleton_type - 1])
-    cv2.imwrite(os.path.join(save_dir, "0_show.jpg"), img)
+    cv2.imwrite(os.path.join(save_dir, "0__show.jpg"), img)
 
 
 def calculate_iou_like(kt1, kt2, sigma):
@@ -263,6 +270,63 @@ def ljw_tower_pose_pack_accuracy(output: list,
     for (output_kt_type, target_kt_type) in zip(output, target):
         tp, fp, fn = calculate_precision_recall(output_kt_type, copy.deepcopy(target_kt_type), sigma,
                                                 iou_threshold=iou_threshold)
+        tps += tp
+        fps += fp
+        fns += fn
+    return tps, fps, fns
+
+
+def calculate_skeleton_precision_recall(detections, ground_truths, sigma, iou_threshold):
+    tp = 0
+    fp = 0
+    fn = 0
+
+    for detection in detections:
+        max_iou = 0
+        max_gt = None
+        temp_iou_1 = 0
+        temp_iou_2 = 0
+
+        pr_p1 = [detection[2], detection[3], None,None]
+        pr_p2 = [detection[6], detection[7], None,None]
+
+        for ground_truth in ground_truths:
+            gt_p1 = [ground_truth[0],ground_truth[1],None]
+            gt_p2 = [ground_truth[3],ground_truth[4],None]
+
+            iou_1 = calculate_iou_like(pr_p1, gt_p1, sigma)
+            iou_2 = calculate_iou_like(pr_p2, gt_p2, sigma)
+
+            if iou_1 + iou_2 > max_iou:
+                max_iou = iou_1 + iou_2
+                max_gt = ground_truth
+                temp_iou_1 = iou_1
+                temp_iou_2 = iou_2
+
+
+        if temp_iou_1 >= iou_threshold and temp_iou_2 >= iou_threshold:
+            tp += 1
+            ground_truths.remove(max_gt)
+        else:
+            fp += 1
+
+    fn = len(ground_truths)
+
+    return tp, fp, fn
+
+
+def ljw_tower_skeleton_accuracy(output: list,
+                                target: list,
+                                sigma: float,
+                                iou_threshold: float = 0.5) -> tuple:
+    tps = 0
+    fps = 0
+    fns = 0
+    for (output_kt_type, target_kt_type) in zip(output, target):
+        tp, fp, fn = calculate_skeleton_precision_recall(output_kt_type,
+                                                         copy.deepcopy(target_kt_type),
+                                                         sigma,
+                                                         iou_threshold=iou_threshold)
         tps += tp
         fps += fp
         fns += fn

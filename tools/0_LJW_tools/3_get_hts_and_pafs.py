@@ -116,6 +116,10 @@ def main():
         images_partial, annotations_partial = data_partial["images"], data_partial["annotations"]
 
         for sheet_order in range(1, 4):
+
+            need_flip_list = []
+
+
             points_data = {}
             book = openpyxl.load_workbook(r"new_points.xlsx")
             sh = book[f'Sheet{sheet_order * 2}']
@@ -185,6 +189,7 @@ def main():
                     if real_keypoint_name_list[0][0] == "4":
                         if keypoints[real_keypoint_name_list.index("4_1_1")][0] > \
                                 keypoints[real_keypoint_name_list.index("4_1_4")][0]:
+                            need_flip_list.append(image_name.split(".")[0])
                             need_flip = True
 
                     for (new_point_name, temp_dict) in points_data.items():
@@ -288,21 +293,21 @@ def main():
                             temp_data[image_name][f'new_skeletons_{sheet_order}'].append([x1, y1, t1, x2, y2, t2, t])
 
 
-                # if True:
-                if not True:
+                if True:
+                # if not True:
                     for image, annotation in zip(images_partial, annotations_partial):
-                        # continue
                         assert image["id"] == annotation["image_id"]
                         keypoints = np.array(annotation["keypoints"]).reshape(-1, 3)
                         keypoints, real_keypoint_name_list = keypoints[keypoints[:, -1] != 0], keypoint_name_list[
                             keypoints[:, -1] != 0]
-                        # if not real_keypoint_name_list[0][0] in ["1", "4", "6"]:
-                        #     continue
                         image_name = image["file_name"]
+                        part_id = image_name.split(".")[0].split("_")[-1]
+                        if len(part_id) == 1:
+                            continue
                         if not image_name in temp_data.keys():
                             temp_data[image_name] = {}
 
-                        temp_data[image_name]["file_path"] = os.path.join(img_partial_dir, image_name)
+                        temp_data[image_name]["file_path"] = os.path.join(img_dir, image_name)
                         temp_data[image_name]['width'] = image['width']
                         temp_data[image_name]['height'] = image['height']
                         temp_data[image_name]['old_keypoints'] = np.hstack(
@@ -312,7 +317,7 @@ def main():
                         temp_data[image_name]['if_ue'] = False
                         num += 1
                         real_keypoint_name_list = real_keypoint_name_list.tolist()
-                        print(num, sheet_order)
+                        print(num)
 
                         new_point_names = []
                         new_xs = []
@@ -324,8 +329,8 @@ def main():
                         need_flip = False
 
                         if real_keypoint_name_list[0][0] == "4":
-                            if keypoints[real_keypoint_name_list.index("4_1_1")][0] > \
-                                    keypoints[real_keypoint_name_list.index("4_1_4")][0]:
+                            base_name = image_name.split("_partial")[0]
+                            if base_name in need_flip_list:
                                 need_flip = True
 
                         for (new_point_name, temp_dict) in points_data.items():
@@ -378,30 +383,30 @@ def main():
                                     new_point_names.append("4_2_sk_5")
                                     new_xs.append(x)
                                     new_ys.append(y)
-                                    new_types.append(3)
+                                    new_types.append(4)
                                     temp_data[image_name][f'new_keypoints_{sheet_order}'].append(
-                                        ["4_2_sk_5", x, y, 3])
+                                        ["4_2_sk_5", x, y, 4])
                                 if new_point_name == "4_2_sk_2":
                                     new_point_names.append("4_2_sk_6")
                                     new_xs.append(x)
                                     new_ys.append(y)
-                                    new_types.append(3)
+                                    new_types.append(4)
                                     temp_data[image_name][f'new_keypoints_{sheet_order}'].append(
-                                        ["4_2_sk_6", x, y, 3])
+                                        ["4_2_sk_6", x, y, 4])
                                 if new_point_name == "4_2_sk_3":
                                     new_point_names.append("4_2_sk_7")
                                     new_xs.append(x)
                                     new_ys.append(y)
-                                    new_types.append(5)
+                                    new_types.append(6)
                                     temp_data[image_name][f'new_keypoints_{sheet_order}'].append(
-                                        ["4_2_sk_7", x, y, 5])
+                                        ["4_2_sk_7", x, y, 6])
                                 if new_point_name == "4_2_sk_4":
                                     new_point_names.append("4_2_sk_8")
                                     new_xs.append(x)
                                     new_ys.append(y)
-                                    new_types.append(5)
+                                    new_types.append(6)
                                     temp_data[image_name][f'new_keypoints_{sheet_order}'].append(
-                                        ["4_2_sk_8", x, y, 5])
+                                        ["4_2_sk_8", x, y, 6])
                         # skeleton
                         for (_, temp_dict) in skeleton_data.items():
                             p1 = temp_dict['p1']
@@ -425,8 +430,7 @@ def main():
                                 x2 = new_xs[new_point_names.index(p2)]
                                 y2 = new_ys[new_point_names.index(p2)]
                                 t2 = new_types[new_point_names.index(p2)]
-                                temp_data[image_name][f'new_skeletons_{sheet_order}'].append(
-                                    [x1, y1, t1, x2, y2, t2, t])
+                                temp_data[image_name][f'new_skeletons_{sheet_order}'].append([x1, y1, t1, x2, y2, t2, t])
 
                 ue_img_dataset = [train_img_list, val_img_list, test_img_list][dataset_idx]
                 real_keypoint_name_list = []
@@ -513,6 +517,7 @@ def main():
                             t2 = new_types[new_point_names.index(p2)]
                             temp_data[ue_img_name][f'new_skeletons_{sheet_order}'].append([x1, y1, t1, x2, y2, t2, t])
                     a = 1
+                print("------------------------------------------------------------------------------------------------------")
 
                 #         ue_img = cv2.line(ue_img, pt1=(x1,y1),pt2=(x2,y2),color=(0,0,255), thickness=5)
                 # cv2.imwrite(r"test3\{}".format(ue_img_name), ue_img)
@@ -1243,9 +1248,9 @@ if __name__ == '__main__':
         bgr_colors.append(bgr_color)
     pt_colors = bgr_colors
 
-    # get_complex_skeletons()
-    # main()
-    # step2()
+    get_complex_skeletons()
+    main()
+    step2()
     get_finale_ann()
     # get_only_one_sample()
     # get_sample()

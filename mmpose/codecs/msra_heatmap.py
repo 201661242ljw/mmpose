@@ -13,7 +13,7 @@ from .utils.post_processing import get_heatmap_maximum
 from .utils.refinement import refine_keypoints, refine_keypoints_dark
 
 from scipy.ndimage.filters import gaussian_filter
-from mmpose.utils import get_all_peaks
+from mmpose.utils import get_all_peaks, get_all_skeletons
 
 
 # def get_all_peaks(heatmap, sigma):
@@ -996,14 +996,29 @@ class LJWHeatmapAndPaf_2(BaseKeypointCodec):
 
         assert self.output_form_3 == True
 
-        pred_pt_1 = ht1[0,:self.num_keypoints_1, :, :]
-        all_peaks_1, all_scroes_1 = get_all_peaks(pred_pt_1, sigma=self.sigma_1, idx_channel=0)
-        pred_pt_2 = ht2[0,:self.num_keypoints_2, :, :]
-        all_peaks_2, all_scroes_2 = get_all_peaks(pred_pt_2, sigma=self.sigma_2, idx_channel=0)
-        pred_pt_3 = ht3[0,:self.num_keypoints_3, :, :]
-        all_peaks_3, all_scroes_3 = get_all_peaks(pred_pt_3, sigma=self.sigma_3, idx_channel=0)
+        img_shape = ht1.shape[2] * 16
 
-        return all_peaks_1, all_scroes_1, all_peaks_2, all_scroes_2, all_peaks_3, all_scroes_3
+        heatmap_kpt_1 = ht1[0, :self.num_keypoints_1, :, :]
+        all_peaks_1, all_scroes_1 = get_all_peaks(heatmap_kpt_1, sigma=self.sigma_1, idx_channel=0, upscale=16)
+
+        # heatmap_paf_1 = ht1[0, self.num_keypoints_1:, :, :]
+        # heatmap_paf_1 = np.transpose(heatmap_paf_1, (1, 2, 0))
+        # heatmap_paf_1 = cv2.resize(heatmap_paf_1, (img_shape, img_shape), interpolation=cv2.INTER_CUBIC)
+        # all_skeletons_1 = get_all_skeletons(heatmap_paf_1, all_peaks_1, img_shape, out_form=1, idx_channel=2)
+
+        heatmap_kpt_2 = ht2[0, :self.num_keypoints_2, :, :]
+        all_peaks_2, all_scroes_2 = get_all_peaks(heatmap_kpt_2, sigma=self.sigma_2, idx_channel=0, upscale=8)
+
+
+        heatmap_kpt_3 = ht3[0, :self.num_keypoints_3, :, :]
+        all_peaks_3, all_scroes_3 = get_all_peaks(heatmap_kpt_3, sigma=self.sigma_3, idx_channel=0, upscale=4)
+
+        heatmap_paf_3 = ht3[0, self.num_keypoints_3:, :, :]
+        heatmap_paf_3 = np.transpose(heatmap_paf_3, (1, 2, 0))
+        heatmap_paf_3 = cv2.resize(heatmap_paf_3, (img_shape, img_shape), interpolation=cv2.INTER_CUBIC)
+        all_skeletons_3 = get_all_skeletons(heatmap_paf_3, all_peaks_3, img_shape, out_form=3, idx_channel=2)
+
+        return all_peaks_1, all_scroes_1, None,  all_peaks_2, all_scroes_2, None, all_peaks_3, all_scroes_3, all_skeletons_3
 
         # keypoints, scores = get_heatmap_maximum(heatmaps)
         #
