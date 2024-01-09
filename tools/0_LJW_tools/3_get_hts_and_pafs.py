@@ -88,14 +88,23 @@ def main():
     num = 0
 
     # ue_json_dir = r"E:\LJW\UE4\UAV\datasets\json"
-    ue_json_dir = r"../data/UE4/json"
-    ue_img_dir = r"../data/UE4\img"
-    ue_img_list = os.listdir(ue_img_dir)
-    ue_img_num = len(ue_img_list)
-    rand = np.random.rand(ue_img_num)
-    train_img_list = np.array(ue_img_list)[rand < 0.7].tolist()
-    val_img_list = np.array(ue_img_list)[np.logical_and(rand < 0.8, rand >= 0.7)].tolist()
-    test_img_list = np.array(ue_img_list)[rand >= 0.8].tolist()
+    ue_3_json_dir = r"../data/UE4/3_json"
+    ue_3_img_dir = r"../data/UE4\3_img"
+    ue_3_img_list = os.listdir(ue_3_img_dir)
+    ue_3_img_num = len(ue_3_img_list)
+    rand = np.random.rand(ue_3_img_num)
+    train_img_list_3 = np.array(ue_3_img_list)[rand < 0.7].tolist()
+    val_img_list_3 = np.array(ue_3_img_list)[np.logical_and(rand < 0.8, rand >= 0.7)].tolist()
+    test_img_list_3 = np.array(ue_3_img_list)[rand >= 0.8].tolist()
+
+    ue_7_json_dir = r"../data/UE4/7_json"
+    ue_7_img_dir = r"../data/UE4\7_img"
+    ue_7_img_list = os.listdir(ue_7_img_dir)
+    ue_7_img_num = len(ue_7_img_list)
+    rand = np.random.rand(ue_7_img_num)
+    train_img_list_7 = np.array(ue_7_img_list)[rand < 0.7].tolist()
+    val_img_list_7 = np.array(ue_7_img_list)[np.logical_and(rand < 0.8, rand >= 0.7)].tolist()
+    test_img_list_7 = np.array(ue_7_img_list)[rand >= 0.8].tolist()
 
     json_dir = r"../data/tower_dataset_12456_train_val_test/annotations"
     img_dir = r"../data/tower_dataset_12456_train_val_test/imgs"
@@ -118,7 +127,6 @@ def main():
         for sheet_order in range(1, 4):
 
             need_flip_list = []
-
 
             points_data = {}
             book = openpyxl.load_workbook(r"new_points.xlsx")
@@ -156,6 +164,9 @@ def main():
             f2.close()
 
             if True:
+                # ------------------------------------------------------------------------------------------------------
+                # true imgs
+                # ------------------------------------------------------------------------------------------------------
                 for image, annotation in zip(images, annotations):
                     assert image["id"] == annotation["image_id"]
                     keypoints = np.array(annotation["keypoints"]).reshape(-1, 3)
@@ -274,14 +285,13 @@ def main():
                         if special_flag and sheet_order == 2:
                             if p1 == "4_2_2" and p2 == "4_3_2":
                                 continue
-                        if need_flip and sheet_order==3:
+                        if need_flip and sheet_order == 3:
                             if p1 == "4_3_sk_8" and p2 == "4_4_sk_8":
                                 p1 = "4_3_sk_7"
                                 p2 = "4_4_sk_7"
                             if p1 == "4_3_sk_5" and p2 == "4_4_sk_7":
                                 p1 = "4_3_sk_6"
                                 p2 = "4_4_sk_8"
-
 
                         if p1 in new_point_names and p2 in new_point_names:
                             x1 = new_xs[new_point_names.index(p1)]
@@ -292,9 +302,11 @@ def main():
                             t2 = new_types[new_point_names.index(p2)]
                             temp_data[image_name][f'new_skeletons_{sheet_order}'].append([x1, y1, t1, x2, y2, t2, t])
 
-
+                # ------------------------------------------------------------------------------------------------------
+                # partial true imgs
+                # ------------------------------------------------------------------------------------------------------
                 if True:
-                # if not True:
+                    # if not True:
                     for image, annotation in zip(images_partial, annotations_partial):
                         assert image["id"] == annotation["image_id"]
                         keypoints = np.array(annotation["keypoints"]).reshape(-1, 3)
@@ -430,38 +442,42 @@ def main():
                                 x2 = new_xs[new_point_names.index(p2)]
                                 y2 = new_ys[new_point_names.index(p2)]
                                 t2 = new_types[new_point_names.index(p2)]
-                                temp_data[image_name][f'new_skeletons_{sheet_order}'].append([x1, y1, t1, x2, y2, t2, t])
+                                temp_data[image_name][f'new_skeletons_{sheet_order}'].append(
+                                    [x1, y1, t1, x2, y2, t2, t])
 
-                ue_img_dataset = [train_img_list, val_img_list, test_img_list][dataset_idx]
+                # ------------------------------------------------------------------------------------------------------
+                # UE_3 imgs
+                # ------------------------------------------------------------------------------------------------------
+                ue_3_img_dataset = [train_img_list_3, val_img_list_3, test_img_list_3][dataset_idx]
                 real_keypoint_name_list = []
-                for ue_img_name in ue_img_dataset:
+                for ue_3_img_name in ue_3_img_dataset:
                     num += 1
                     print(num)
-                    ue_img_path = os.path.join(r"../data/UE4/IMG_", ue_img_name)
+                    ue_3_img_path = os.path.join(r"../data/UE4/IMG_", ue_3_img_name)
 
-                    ue_img = cv2.imread(ue_img_path, 1) // 4
-                    height = ue_img.shape[0]
-                    width = ue_img.shape[1]
+                    ue_3_img = cv2.imread(ue_3_img_path, 1) // 4
+                    height = ue_3_img.shape[0]
+                    width = ue_3_img.shape[1]
 
-                    ue_ann_path = os.path.join(ue_json_dir, ue_img_name.replace("png", "json"))
+                    ue_ann_path = os.path.join(ue_3_json_dir, ue_3_img_name.replace("png", "json"))
 
                     ue_data = json.load(open(ue_ann_path, "r", encoding="utf-8"), strict=False)["points"]
-                    if not ue_img_name in temp_data.keys():
-                        temp_data[ue_img_name] = {}
+                    if not ue_3_img_name in temp_data.keys():
+                        temp_data[ue_3_img_name] = {}
 
-                    temp_data[ue_img_name]["file_path"] = ue_img_path
-                    temp_data[ue_img_name]['width'] = width
-                    temp_data[ue_img_name]['height'] = height
-                    temp_data[ue_img_name]['old_keypoints'] = []
-                    temp_data[ue_img_name][f'new_keypoints_{sheet_order}'] = []
-                    temp_data[ue_img_name][f'new_skeletons_{sheet_order}'] = []
-                    temp_data[ue_img_name]['if_ue'] = True
+                    temp_data[ue_3_img_name]["file_path"] = ue_3_img_path
+                    temp_data[ue_3_img_name]['width'] = width
+                    temp_data[ue_3_img_name]['height'] = height
+                    temp_data[ue_3_img_name]['old_keypoints'] = []
+                    temp_data[ue_3_img_name][f'new_keypoints_{sheet_order}'] = []
+                    temp_data[ue_3_img_name][f'new_skeletons_{sheet_order}'] = []
+                    temp_data[ue_3_img_name]['if_ue'] = True
                     new_point_names = []
                     new_xs = []
                     new_ys = []
                     new_types = []
                     for p_name in ue_data.keys():
-                        temp_data[ue_img_name]['old_keypoints'].append(
+                        temp_data[ue_3_img_name]['old_keypoints'].append(
                             [p_name, ue_data[p_name]['x'], ue_data[p_name]['y']])
                     for (new_point_name, temp_dict) in points_data.items():
                         xs = []
@@ -501,7 +517,7 @@ def main():
                             new_xs.append(x)
                             new_ys.append(y)
                             new_types.append(temp_dict["type"])
-                            temp_data[ue_img_name][f'new_keypoints_{sheet_order}'].append(
+                            temp_data[ue_3_img_name][f'new_keypoints_{sheet_order}'].append(
                                 [new_point_name, x, y, temp_dict["type"]])
 
                     for (_, temp_dict) in skeleton_data.items():
@@ -515,12 +531,102 @@ def main():
                             x2 = new_xs[new_point_names.index(p2)]
                             y2 = new_ys[new_point_names.index(p2)]
                             t2 = new_types[new_point_names.index(p2)]
-                            temp_data[ue_img_name][f'new_skeletons_{sheet_order}'].append([x1, y1, t1, x2, y2, t2, t])
+                            temp_data[ue_3_img_name][f'new_skeletons_{sheet_order}'].append([x1, y1, t1, x2, y2, t2, t])
                     a = 1
-                print("------------------------------------------------------------------------------------------------------")
 
-                #         ue_img = cv2.line(ue_img, pt1=(x1,y1),pt2=(x2,y2),color=(0,0,255), thickness=5)
-                # cv2.imwrite(r"test3\{}".format(ue_img_name), ue_img)
+                # ------------------------------------------------------------------------------------------------------
+                # UE_3 imgs
+                # ------------------------------------------------------------------------------------------------------
+                ue_7_img_dataset = [train_img_list_7, val_img_list_7, test_img_list_7][dataset_idx]
+                real_keypoint_name_list = []
+                for ue_7_img_name in ue_7_img_dataset:
+                    num += 1
+                    print(num)
+                    ue_7_img_path = os.path.join(r"../data/UE4/IMG_", ue_7_img_name)
+
+                    ue_7_img = cv2.imread(ue_7_img_path, 1) // 4
+                    height = ue_7_img.shape[0]
+                    width = ue_7_img.shape[1]
+
+                    ue_ann_path = os.path.join(ue_7_json_dir, ue_7_img_name.replace("png", "json"))
+
+                    ue_data = json.load(open(ue_ann_path, "r", encoding="utf-8"), strict=False)["points"]
+                    if not ue_7_img_name in temp_data.keys():
+                        temp_data[ue_7_img_name] = {}
+
+                    temp_data[ue_7_img_name]["file_path"] = ue_7_img_path
+                    temp_data[ue_7_img_name]['width'] = width
+                    temp_data[ue_7_img_name]['height'] = height
+                    temp_data[ue_7_img_name]['old_keypoints'] = []
+                    temp_data[ue_7_img_name][f'new_keypoints_{sheet_order}'] = []
+                    temp_data[ue_7_img_name][f'new_skeletons_{sheet_order}'] = []
+                    temp_data[ue_7_img_name]['if_ue'] = True
+                    new_point_names = []
+                    new_xs = []
+                    new_ys = []
+                    new_types = []
+                    for p_name in ue_data.keys():
+                        temp_data[ue_7_img_name]['old_keypoints'].append(
+                            [p_name, ue_data[p_name]['x'], ue_data[p_name]['y']])
+                    for (new_point_name, temp_dict) in points_data.items():
+                        xs = []
+                        ys = []
+
+                        for p_name in temp_dict["points"]:
+                            if p_name in ue_data.keys():
+                                xs.append(ue_data[p_name]['x'])
+                                ys.append(ue_data[p_name]['y'])
+
+                        if len(xs) != 0:
+                            x = int(np.average(np.array(xs)))
+                            y = int(np.average(np.array(ys)))
+                            if need_flip:
+                                [tower_type, floor, _, num] = new_point_name.split("_")
+                                num = int(num)
+                                if num < 5:
+                                    new_point_name = f"{tower_type}_{floor}_e_{int(4 - num)}"
+                                else:
+                                    new_point_name = f"{tower_type}_{floor}_e_{int(13 - num)}"
+                            # for p_name in temp_dict["points"]:
+                            #     if p_name in real_keypoint_name_list:
+                            #         img = cv2.line(img, pt1=(x, y), pt2=(keypoints[real_keypoint_name_list.index(p_name)][0],
+                            #                                              keypoints[real_keypoint_name_list.index(p_name)][1]),
+                            #                        color=(255, 255, 255), thickness=2)
+
+                            # text = new_point_name
+                            # org = (x, y)
+                            # fontFace = cv2.FONT_HERSHEY_SIMPLEX
+                            # fontScale = 1
+                            # color = [(0, 0, 255), (0, 255, 255), (0, 255, 0), (255, 0, 0), (255, 255, 0)][temp_dict['type'] - 1]
+                            # thickness = 2
+
+                            # img = cv2.circle(img, center=(x, y), radius=30, color=color, thickness=-1)
+                            # cv2.putText(img, text, org, fontFace, fontScale, color, thickness)
+                            new_point_names.append(new_point_name)
+                            new_xs.append(x)
+                            new_ys.append(y)
+                            new_types.append(temp_dict["type"])
+                            temp_data[ue_7_img_name][f'new_keypoints_{sheet_order}'].append(
+                                [new_point_name, x, y, temp_dict["type"]])
+
+                    for (_, temp_dict) in skeleton_data.items():
+                        p1 = temp_dict['p1']
+                        p2 = temp_dict["p2"]
+                        t = temp_dict["type"]
+                        if p1 in new_point_names and p2 in new_point_names:
+                            x1 = new_xs[new_point_names.index(p1)]
+                            y1 = new_ys[new_point_names.index(p1)]
+                            t1 = new_types[new_point_names.index(p1)]
+                            x2 = new_xs[new_point_names.index(p2)]
+                            y2 = new_ys[new_point_names.index(p2)]
+                            t2 = new_types[new_point_names.index(p2)]
+                            temp_data[ue_7_img_name][f'new_skeletons_{sheet_order}'].append([x1, y1, t1, x2, y2, t2, t])
+                    a = 1
+                print(
+                    "------------------------------------------------------------------------------------------------------")
+
+                #         ue_3_img = cv2.line(ue_3_img, pt1=(x1,y1),pt2=(x2,y2),color=(0,0,255), thickness=5)
+                # cv2.imwrite(r"test3\{}".format(ue_3_img_name), ue_3_img)
                 # exit()
         b = json.dumps(temp_data, ensure_ascii=False, indent=4)
         f2 = open(r"../data/00_new_dataset/tower_info_{}_2.json".format(dataset), 'w', encoding='utf-8')
@@ -543,23 +649,23 @@ def get_sample():
             img = cv2.imread(img_path, 1) // 8
             for [kt_name, x, y, kt_type] in kts:
                 img = cv2.circle(img, center=(x, y), color=pt_colors[kt_type - 1], thickness=-1, radius=3)
-                img = cv2.putText(img, kt_name, (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
+                img = cv2.putText(img, kt_name, (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
                 # cv2.putText(image, text, (5, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
             cv2.imwrite("../data/label_kts/{}.jpg".format(tower_type), img)
-        if tower_type == "4":
-            already_draw.append(tower_type)
-            img_path = img_data['file_path']
-            img = cv2.imread(img_path, 1) // 8
-            for [kt_name, x, y, kt_type] in kts:
-                img = cv2.circle(img, center=(x, y), color=pt_colors[kt_type - 1], thickness=-1, radius=3)
-                img = cv2.putText(img, kt_name, (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
-                # cv2.putText(image, text, (5, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
-            cv2.imwrite("../data/label_kts/{}.jpg".format(os.path.basename(img_path)), img)
+        # if tower_type == "4":
+        #     already_draw.append(tower_type)
+        #     img_path = img_data['file_path']
+        #     img = cv2.imread(img_path, 1) // 8
+        #     for [kt_name, x, y, kt_type] in kts:
+        #         img = cv2.circle(img, center=(x, y), color=pt_colors[kt_type - 1], thickness=-1, radius=3)
+        #         img = cv2.putText(img, kt_name, (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
+        #         # cv2.putText(image, text, (5, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
+        #     cv2.imwrite("../data/label_kts/{}.jpg".format(os.path.basename(img_path)), img)
 
 
 def step2():
     # type_ = 2
-    for new_size in [256, 384, 512, 640, 768, 1024, 1280]:
+    for new_size in [256, 384, 512, 640, 768, 1024, 1280][-1:]:
         ann_dir = r"../data/00_new_dataset"
         save_dir = r"../data/00_Tower_Dataset/{}".format(new_size)
 
@@ -589,10 +695,10 @@ def step2():
                 old_points = np.array(img_data['old_keypoints'])
                 first_point_name = old_points[0, 0]
 
-                if "point" in first_point_name:
-                    flag = "point"
-                else:
-                    flag = first_point_name[0]
+                # if "point" in first_point_name:
+                #     flag = "point"
+                # else:
+                flag = first_point_name[0]
 
                 for type_ in range(1, 4):
                     new_points = np.array(img_data[f"new_keypoints_{type_}"])
@@ -643,7 +749,7 @@ def step2():
                         new_img = cv2.resize(img, (new_width, new_height))
                         cv2.imwrite(save_path, new_img)
                     # if flag != "4":
-                    if flag in already_draw_list :
+                    if flag in already_draw_list:
                         continue
 
                     img = cv2.imread(img_path, 1)
@@ -683,7 +789,7 @@ def get_complex_skeletons():
             "description": "前层边缘点和下层支撑点",
             "floors": [
                 [[11, 11], [12, 12], [13, 13], [21, 21], [22, 22], [31, 31], [32, 32], [33, 33], [41, 41], [44, 44],
-                 [42, 42]],
+                 [42, 42], [71, 71], [72, 72], [73, 73]],
                 [[51, 51], [61, 61]]
             ],
             "name_pairs": [
@@ -695,7 +801,7 @@ def get_complex_skeletons():
             "description": "后层边缘点和下层支撑点",
             "floors": [
                 [[11, 11], [12, 12], [13, 13], [21, 21], [22, 22], [31, 31], [32, 32], [33, 33], [41, 41], [44, 44],
-                 [42, 42]],
+                 [42, 42], [71, 71], [72, 72], [73, 73]],
                 [[51, 51], [61, 61]]
             ],
             "name_pairs": [
@@ -707,7 +813,7 @@ def get_complex_skeletons():
             "description": "前层边缘点和上层支撑点",
             "floors": [
                 [[11, 11], [12, 12], [13, 13], [21, 21], [22, 22], [31, 31], [32, 32], [33, 33], [41, 41], [44, 44],
-                 [42, 42]],
+                 [42, 42], [71, 71], [72, 72], [73, 73]],
                 [[52, 51], [62, 61]]
             ],
             "name_pairs": [
@@ -719,7 +825,7 @@ def get_complex_skeletons():
             "description": "后层边缘点和上层支撑点",
             "floors": [
                 [[11, 11], [12, 12], [13, 13], [21, 21], [22, 22], [31, 31], [32, 32], [33, 33], [41, 41], [44, 44],
-                 [42, 42]],
+                 [42, 42], [71, 71], [72, 72], [73, 73]],
                 [[52, 51], [62, 61]]
             ],
             "name_pairs": [
@@ -731,7 +837,7 @@ def get_complex_skeletons():
             "description": "边缘点前后相连",
             "floors": [
                 [[11, 11], [12, 12], [13, 13], [21, 21], [22, 22], [23, 23], [31, 31], [32, 32], [33, 33], [41, 41],
-                 [42, 42], [44, 44], [51, 51], [61, 61]],
+                 [42, 42], [44, 44], [51, 51], [61, 61], [71, 71], [72, 72], [73, 73]],
             ],
             "name_pairs": [
                 [["e_4", "e_1"], ["e_3", "e_2"]],
@@ -741,7 +847,7 @@ def get_complex_skeletons():
             "description": "前面下层支撑点水平相连",
             "floors": [
                 [[11, 11], [12, 12], [13, 13], [14, 14], [21, 21], [22, 22], [24, 24], [31, 31], [32, 32], [33, 33],
-                 [34, 34], [41, 41], [42, 42], [43, 43], [44, 44]],
+                 [34, 34], [41, 41], [42, 42], [43, 43], [44, 44], [71, 71], [72, 72], [73, 73],[74,74]],
                 [[51, 51], [61, 61]]
             ],
             "name_pairs": [
@@ -754,7 +860,7 @@ def get_complex_skeletons():
             "description": "后面下层支撑点水平相连",
             "floors": [
                 [[11, 11], [12, 12], [13, 13], [14, 14], [21, 21], [22, 22], [24, 24], [31, 31], [32, 32], [33, 33],
-                 [34, 34], [41, 41], [42, 42], [43, 43], [44, 44]],
+                 [34, 34], [41, 41], [42, 42], [43, 43], [44, 44], [71, 71], [72, 72], [73, 73],[74,74]],
                 [[51, 51], [61, 61]]
             ],
             "name_pairs": [
@@ -767,7 +873,7 @@ def get_complex_skeletons():
             "description": "前面上层支撑点水平相连",
             "floors": [
                 [[11, 11], [12, 12], [13, 13], [14, 14], [21, 21], [22, 22], [24, 24], [31, 31], [32, 32], [33, 33],
-                 [34, 34], [41, 41], [42, 42], [43, 43], [44, 44]],
+                 [34, 34], [41, 41], [42, 42], [43, 43], [44, 44], [71, 71], [72, 72], [73, 73],[74,74]],
                 [[52, 52], [62, 62]]
             ],
             "name_pairs": [
@@ -780,7 +886,7 @@ def get_complex_skeletons():
             "description": "后面上层支撑点水平相连",
             "floors": [
                 [[11, 11], [12, 12], [13, 13], [14, 14], [21, 21], [22, 22], [24, 24], [31, 31], [32, 32], [33, 33],
-                 [34, 34], [41, 41], [42, 42], [43, 43], [44, 44]],
+                 [34, 34], [41, 41], [42, 42], [43, 43], [44, 44], [71, 71], [72, 72], [73, 73],[74,74]],
                 [[52, 52], [62, 62]]
             ],
             "name_pairs": [
@@ -793,7 +899,7 @@ def get_complex_skeletons():
             "description": "下层支撑点前后相连",
             "floors": [
                 [[11, 11], [12, 12], [13, 13], [14, 14], [21, 21], [22, 22], [24, 24], [31, 31], [32, 32], [33, 33],
-                 [34, 34], [41, 41], [42, 42], [43, 43], [44, 44]],
+                 [34, 34], [41, 41], [42, 42], [43, 43], [44, 44], [71, 71], [72, 72], [73, 73],[74,74]],
                 [[51, 51], [61, 61]]
             ],
             "name_pairs": [
@@ -805,7 +911,7 @@ def get_complex_skeletons():
             "description": "上层支撑点前后相连",
             "floors": [
                 [[11, 11], [12, 12], [13, 13], [14, 14], [21, 21], [22, 22], [24, 24], [31, 31], [32, 32], [33, 33],
-                 [34, 34], [41, 41], [42, 42], [43, 43], [44, 44]],
+                 [34, 34], [41, 41], [42, 42], [43, 43], [44, 44], [71, 71], [72, 72], [73, 73],[74,74]],
                 [[52, 52], [62, 62]]
             ],
             "name_pairs": [
@@ -817,7 +923,7 @@ def get_complex_skeletons():
             "description": "前层同层支撑点上下相连",
             "floors": [
                 [[11, 11], [12, 12], [13, 13], [14, 14], [21, 21], [22, 22], [24, 24], [31, 31], [32, 32], [33, 33],
-                 [34, 34], [41, 41], [42, 42], [43, 43], [44, 44]],
+                 [34, 34], [41, 41], [42, 42], [43, 43], [44, 44], [71, 71], [72, 72], [73, 73],[74,74]],
                 [[51, 52], [61, 62]]
             ],
             "name_pairs": [
@@ -829,7 +935,7 @@ def get_complex_skeletons():
             "description": "后层同层支撑点上下相连",
             "floors": [
                 [[11, 11], [12, 12], [13, 13], [14, 14], [21, 21], [22, 22], [24, 24], [31, 31], [32, 32], [33, 33],
-                 [34, 34], [41, 41], [42, 42], [43, 43], [44, 44]],
+                 [34, 34], [41, 41], [42, 42], [43, 43], [44, 44], [71, 71], [72, 72], [73, 73],[74,74]],
                 [[51, 52], [61, 62]]
             ],
             "name_pairs": [
@@ -841,7 +947,7 @@ def get_complex_skeletons():
             "description": "前层隔层支撑点上下相连",
             "floors": [
                 [[11, 12], [12, 13], [13, 14], [21, 22], [22, 24], [31, 32], [32, 33], [33, 34],
-                 [41, 42], [42, 43]]
+                 [41, 42], [42, 43], [71, 72], [72, 73], [73, 74]]
             ],
             "name_pairs": [
                 [["sk_5", "sk_1"], ["sk_6", "sk_2"]]
@@ -852,7 +958,7 @@ def get_complex_skeletons():
             "description": "后层隔层支撑点上下相连",
             "floors": [
                 [[11, 12], [12, 13], [13, 14], [21, 22], [22, 24], [31, 32], [32, 33], [33, 34],
-                 [41, 42], [42, 43]]
+                 [41, 42], [42, 43], [71, 72], [72, 73], [73, 74]]
             ],
             "name_pairs": [
                 [["sk_8", "sk_4"], ["sk_7", "sk_3"]]
@@ -956,10 +1062,14 @@ def get_complex_skeletons():
         {
             "description": "前上支撑点与前避雷线点",
             "floors": [
-                [[14, 14], [24, 24], [34, 34], [43, 43]]
+                [[14, 14], [24, 24], [34, 34], [43, 43]],
+                [[52, 53], [62, 63]],
+                [[74, 74]]
             ],
             "name_pairs": [
-                [["sk_5", "bl_1"], ["sk_6", "bl_2"]]
+                [["sk_5", "bl_1"], ["sk_6", "bl_2"]],
+                [["sk_1", "bl_1"], ["sk_2", "bl_1"], ["sk_3", "bl_2"], ["sk_4", "bl_2"]],
+                [["sk_5", "bl_1"], ["sk_6", "bl_1"]]
             ]
         },
         {
@@ -974,30 +1084,34 @@ def get_complex_skeletons():
         {
             "description": "后上支撑点与后避雷线点",
             "floors": [
-                [[14, 14], [24, 24], [34, 34], [43, 43]]
+                [[14, 14], [24, 24], [34, 34], [43, 43]],
+                [[52, 53], [62, 63]],
+                [[74, 74]]
             ],
             "name_pairs": [
-                [["sk_8", "bl_4"], ["sk_7", "bl_3"]]
+                [["sk_8", "bl_4"], ["sk_7", "bl_3"]],
+                [["sk_8", "bl_4"], ["sk_7", "bl_4"], ["sk_6", "bl_3"], ["sk_5", "bl_3"]],
+                [["sk_8", "bl_4"], ["sk_7", "bl_4"]]
             ]
         },
-        {
-            "description": "酒杯型避雷线点与前支撑点相连",
-            "floors": [
-                [[52, 53], [62, 63]]
-            ],
-            "name_pairs": [
-                [["sk_1", "bl_1"], ["sk_2", "bl_1"], ["sk_3", "bl_2"], ["sk_4", "bl_2"]]
-            ]
-        },
-        {
-            "description": "酒杯型避雷线点与后支撑点相连",
-            "floors": [
-                [[52, 53], [62, 63]]
-            ],
-            "name_pairs": [
-                [["sk_8", "bl_4"], ["sk_7", "bl_4"], ["sk_6", "bl_3"], ["sk_5", "bl_3"]]
-            ]
-        },
+        # {
+        #     "description": "酒杯型避雷线点与前支撑点相连",
+        #     "floors": [
+        #         [[52, 53], [62, 63]]
+        #     ],
+        #     "name_pairs": [
+        #         [["sk_1", "bl_1"], ["sk_2", "bl_1"], ["sk_3", "bl_2"], ["sk_4", "bl_2"]]
+        #     ]
+        # },
+        # {
+        #     "description": "酒杯型避雷线点与后支撑点相连",
+        #     "floors": [
+        #         [[52, 53], [62, 63]]
+        #     ],
+        #     "name_pairs": [
+        #         [["sk_8", "bl_4"], ["sk_7", "bl_4"], ["sk_6", "bl_3"], ["sk_5", "bl_3"]]
+        #     ]
+        # },
         {
             "description": "避雷线点前后相连",
             "floors": [
@@ -1113,7 +1227,7 @@ def get_sk_ids():
     pt_2_type = {}
     rom_num = 2
 
-    sk_kt_channels = [[]] * 39
+    sk_kt_channels = [[]] * 37
     sk_channels = []
     sh = book['Sheet6']
     while sh[f'A{rom_num}'].value != None:
@@ -1251,7 +1365,7 @@ if __name__ == '__main__':
     get_complex_skeletons()
     main()
     step2()
-    get_finale_ann()
+    # get_finale_ann()
     # get_only_one_sample()
-    # get_sample()
+    get_sample()
     # get_sk_ids()

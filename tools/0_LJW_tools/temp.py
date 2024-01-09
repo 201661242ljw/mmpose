@@ -1,3 +1,5 @@
+import shutil
+
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -74,6 +76,35 @@ def see__or_oks():
     # plt.show()
 
 
+
+def rename_points_ue():
+    src_img_dir_all = r"../data/UE4/backup/IMG_"
+    dst_img_dir_all = r"../data/UE4/IMG_"
+
+    src_json_dir_all = r"../data/UE4/backup/json"
+
+
+
+
+    for type_ in ["3", "7"]:
+        src_img_dir = r"../data/UE4/{}_img".format(type_)
+        dst_json_dir = r"../data/UE4/{}_json".format(type_)
+        for img_name in os.listdir(src_img_dir):
+            src = os.path.join(src_img_dir_all, img_name)
+            dst = os.path.join(dst_img_dir_all, img_name)
+            if not os.path.exists(dst):
+                shutil.copy(src, dst)
+
+                json_path = os.path.join(src_json_dir_all, "{}.json".format(img_name.split(".")[0]))
+                f = open(json_path, "r", encoding="utf-8").read()
+                f = f.replace("edge", f"{type_}_edge").replace("sk", f"{type_}_sk").replace("bi", f"{type_}_bi")
+                dst_json_path = os.path.join(dst_json_dir,"{}.json".format(img_name.split(".")[0]))
+                f2 = open(dst_json_path, "w", encoding="utf-8")
+                f2.write(f)
+                f2.close()
+
+
 if __name__ == '__main__':
-    path = os.getcwd()
-    print(path)
+    # path = os.getcwd()
+    # print(path)
+    rename_points_ue()

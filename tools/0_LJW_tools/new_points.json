@@ -582,289 +582,565 @@
     "3_1_e_1": {
         "type": 1,
         "points": [
-            "edgepoint_1_1_"
+            "3_edgepoint_1_1_"
         ]
     },
     "3_1_e_2": {
         "type": 1,
         "points": [
-            "edgepoint_1_2_"
+            "3_edgepoint_1_2_"
         ]
     },
     "3_1_e_3": {
         "type": 2,
         "points": [
-            "edgepoint_1_2_"
+            "3_edgepoint_1_2_"
         ]
     },
     "3_1_e_4": {
         "type": 2,
         "points": [
-            "edgepoint_1_1_"
+            "3_edgepoint_1_1_"
         ]
     },
     "3_1_sk_1": {
         "type": 3,
         "points": [
-            "skeletonpoint_1_1_"
+            "3_skeletonpoint_1_1_"
         ]
     },
     "3_1_sk_2": {
         "type": 3,
         "points": [
-            "skeletonpoint_1_2_"
+            "3_skeletonpoint_1_2_"
         ]
     },
     "3_1_sk_3": {
         "type": 5,
         "points": [
-            "skeletonpoint_1_3_"
+            "3_skeletonpoint_1_3_"
         ]
     },
     "3_1_sk_4": {
         "type": 5,
         "points": [
-            "skeletonpoint_1_4_"
+            "3_skeletonpoint_1_4_"
         ]
     },
     "3_1_sk_5": {
         "type": 4,
         "points": [
-            "skeletonpoint_1_5_"
+            "3_skeletonpoint_1_5_"
         ]
     },
     "3_1_sk_6": {
         "type": 4,
         "points": [
-            "skeletonpoint_1_6_"
+            "3_skeletonpoint_1_6_"
         ]
     },
     "3_1_sk_7": {
         "type": 6,
         "points": [
-            "skeletonpoint_1_7_"
+            "3_skeletonpoint_1_7_"
         ]
     },
     "3_1_sk_8": {
         "type": 6,
         "points": [
-            "skeletonpoint_1_8_"
+            "3_skeletonpoint_1_8_"
         ]
     },
     "3_2_e_1": {
         "type": 1,
         "points": [
-            "edgepoint_2_1_"
+            "3_edgepoint_2_1_"
         ]
     },
     "3_2_e_2": {
         "type": 1,
         "points": [
-            "edgepoint_2_2_"
+            "3_edgepoint_2_2_"
         ]
     },
     "3_2_e_3": {
         "type": 2,
         "points": [
-            "edgepoint_2_2_"
+            "3_edgepoint_2_2_"
         ]
     },
     "3_2_e_4": {
         "type": 2,
         "points": [
-            "edgepoint_2_1_"
+            "3_edgepoint_2_1_"
         ]
     },
     "3_2_sk_1": {
         "type": 3,
         "points": [
-            "skeletonpoint_2_1_"
+            "3_skeletonpoint_2_1_"
         ]
     },
     "3_2_sk_2": {
         "type": 3,
         "points": [
-            "skeletonpoint_2_2_"
+            "3_skeletonpoint_2_2_"
         ]
     },
     "3_2_sk_3": {
         "type": 5,
         "points": [
-            "skeletonpoint_2_3_"
+            "3_skeletonpoint_2_3_"
         ]
     },
     "3_2_sk_4": {
         "type": 5,
         "points": [
-            "skeletonpoint_2_4_"
+            "3_skeletonpoint_2_4_"
         ]
     },
     "3_2_sk_5": {
         "type": 4,
         "points": [
-            "skeletonpoint_2_5_"
+            "3_skeletonpoint_2_5_"
         ]
     },
     "3_2_sk_6": {
         "type": 4,
         "points": [
-            "skeletonpoint_2_6_"
+            "3_skeletonpoint_2_6_"
         ]
     },
     "3_2_sk_7": {
         "type": 6,
         "points": [
-            "skeletonpoint_2_7_"
+            "3_skeletonpoint_2_7_"
         ]
     },
     "3_2_sk_8": {
         "type": 6,
         "points": [
-            "skeletonpoint_2_8_"
+            "3_skeletonpoint_2_8_"
         ]
     },
     "3_3_e_1": {
         "type": 1,
         "points": [
-            "edgepoint_3_1_"
+            "3_edgepoint_3_1_"
         ]
     },
     "3_3_e_2": {
         "type": 1,
         "points": [
-            "edgepoint_3_2_"
+            "3_edgepoint_3_2_"
         ]
     },
     "3_3_e_3": {
         "type": 2,
         "points": [
-            "edgepoint_3_2_"
+            "3_edgepoint_3_2_"
         ]
     },
     "3_3_e_4": {
         "type": 2,
         "points": [
-            "edgepoint_3_1_"
+            "3_edgepoint_3_1_"
         ]
     },
     "3_3_sk_1": {
         "type": 3,
         "points": [
-            "skeletonpoint_3_1_"
+            "3_skeletonpoint_3_1_"
         ]
     },
     "3_3_sk_2": {
         "type": 3,
         "points": [
-            "skeletonpoint_3_2_"
+            "3_skeletonpoint_3_2_"
         ]
     },
     "3_3_sk_3": {
         "type": 5,
         "points": [
-            "skeletonpoint_3_3_"
+            "3_skeletonpoint_3_3_"
         ]
     },
     "3_3_sk_4": {
         "type": 5,
         "points": [
-            "skeletonpoint_3_4_"
+            "3_skeletonpoint_3_4_"
         ]
     },
     "3_3_sk_5": {
         "type": 4,
         "points": [
-            "skeletonpoint_3_5_"
+            "3_skeletonpoint_3_5_"
         ]
     },
     "3_3_sk_6": {
         "type": 4,
         "points": [
-            "skeletonpoint_3_6_"
+            "3_skeletonpoint_3_6_"
         ]
     },
     "3_3_sk_7": {
         "type": 6,
         "points": [
-            "skeletonpoint_3_7_"
+            "3_skeletonpoint_3_7_"
         ]
     },
     "3_3_sk_8": {
         "type": 6,
         "points": [
-            "skeletonpoint_3_8_"
+            "3_skeletonpoint_3_8_"
         ]
     },
     "3_4_bl_1": {
         "type": 9,
         "points": [
-            "bileipoint_4_1_"
+            "3_bileipoint_4_1_"
         ]
     },
     "3_4_bl_2": {
         "type": 9,
         "points": [
-            "bileipoint_4_2_"
+            "3_bileipoint_4_2_"
         ]
     },
     "3_4_bl_3": {
         "type": 10,
         "points": [
-            "bileipoint_4_2_"
+            "3_bileipoint_4_2_"
         ]
     },
     "3_4_bl_4": {
         "type": 10,
         "points": [
-            "bileipoint_4_1_"
+            "3_bileipoint_4_1_"
         ]
     },
     "3_4_sk_1": {
         "type": 3,
         "points": [
-            "skeletonpoint_4_1_"
+            "3_skeletonpoint_4_1_"
         ]
     },
     "3_4_sk_2": {
         "type": 3,
         "points": [
-            "skeletonpoint_4_2_"
+            "3_skeletonpoint_4_2_"
         ]
     },
     "3_4_sk_3": {
         "type": 5,
         "points": [
-            "skeletonpoint_4_3_"
+            "3_skeletonpoint_4_3_"
         ]
     },
     "3_4_sk_4": {
         "type": 5,
         "points": [
-            "skeletonpoint_4_4_"
+            "3_skeletonpoint_4_4_"
         ]
     },
     "3_4_sk_5": {
         "type": 4,
         "points": [
-            "skeletonpoint_4_5_"
+            "3_skeletonpoint_4_5_"
         ]
     },
     "3_4_sk_6": {
         "type": 4,
         "points": [
-            "skeletonpoint_4_6_"
+            "3_skeletonpoint_4_6_"
         ]
     },
     "3_4_sk_7": {
         "type": 6,
         "points": [
-            "skeletonpoint_4_6_"
+            "3_skeletonpoint_4_6_"
         ]
     },
     "3_4_sk_8": {
         "type": 6,
         "points": [
-            "skeletonpoint_4_5_"
+            "3_skeletonpoint_4_5_"
+        ]
+    },
+    "7_1_e_1": {
+        "type": 1,
+        "points": [
+            "7_edgepoint_1_1_"
+        ]
+    },
+    "7_1_e_2": {
+        "type": 1,
+        "points": [
+            "7_edgepoint_1_2_"
+        ]
+    },
+    "7_1_e_3": {
+        "type": 2,
+        "points": [
+            "7_edgepoint_1_2_"
+        ]
+    },
+    "7_1_e_4": {
+        "type": 2,
+        "points": [
+            "7_edgepoint_1_1_"
+        ]
+    },
+    "7_1_sk_1": {
+        "type": 3,
+        "points": [
+            "7_skeletonpoint_1_1_"
+        ]
+    },
+    "7_1_sk_2": {
+        "type": 3,
+        "points": [
+            "7_skeletonpoint_1_2_"
+        ]
+    },
+    "7_1_sk_3": {
+        "type": 5,
+        "points": [
+            "7_skeletonpoint_1_3_"
+        ]
+    },
+    "7_1_sk_4": {
+        "type": 5,
+        "points": [
+            "7_skeletonpoint_1_4_"
+        ]
+    },
+    "7_1_sk_5": {
+        "type": 4,
+        "points": [
+            "7_skeletonpoint_1_5_"
+        ]
+    },
+    "7_1_sk_6": {
+        "type": 4,
+        "points": [
+            "7_skeletonpoint_1_6_"
+        ]
+    },
+    "7_1_sk_7": {
+        "type": 6,
+        "points": [
+            "7_skeletonpoint_1_7_"
+        ]
+    },
+    "7_1_sk_8": {
+        "type": 6,
+        "points": [
+            "7_skeletonpoint_1_8_"
+        ]
+    },
+    "7_2_e_1": {
+        "type": 1,
+        "points": [
+            "7_edgepoint_2_2_"
+        ]
+    },
+    "7_2_e_2": {
+        "type": 1,
+        "points": [
+            "7_edgepoint_2_1_"
+        ]
+    },
+    "7_2_e_3": {
+        "type": 2,
+        "points": [
+            "7_edgepoint_2_1_"
+        ]
+    },
+    "7_2_e_4": {
+        "type": 2,
+        "points": [
+            "7_edgepoint_2_2_"
+        ]
+    },
+    "7_2_sk_1": {
+        "type": 3,
+        "points": [
+            "7_skeletonpoint_2_1_"
+        ]
+    },
+    "7_2_sk_2": {
+        "type": 3,
+        "points": [
+            "7_skeletonpoint_2_2_"
+        ]
+    },
+    "7_2_sk_3": {
+        "type": 5,
+        "points": [
+            "7_skeletonpoint_2_3_"
+        ]
+    },
+    "7_2_sk_4": {
+        "type": 5,
+        "points": [
+            "7_skeletonpoint_2_4_"
+        ]
+    },
+    "7_2_sk_5": {
+        "type": 4,
+        "points": [
+            "7_skeletonpoint_2_5_"
+        ]
+    },
+    "7_2_sk_6": {
+        "type": 4,
+        "points": [
+            "7_skeletonpoint_2_6_"
+        ]
+    },
+    "7_2_sk_7": {
+        "type": 6,
+        "points": [
+            "7_skeletonpoint_2_7_"
+        ]
+    },
+    "7_2_sk_8": {
+        "type": 6,
+        "points": [
+            "7_skeletonpoint_2_8_"
+        ]
+    },
+    "7_3_e_1": {
+        "type": 1,
+        "points": [
+            "7_edgepoint_3_2_"
+        ]
+    },
+    "7_3_e_2": {
+        "type": 1,
+        "points": [
+            "7_edgepoint_3_1_"
+        ]
+    },
+    "7_3_e_3": {
+        "type": 2,
+        "points": [
+            "7_edgepoint_3_1_"
+        ]
+    },
+    "7_3_e_4": {
+        "type": 2,
+        "points": [
+            "7_edgepoint_3_2_"
+        ]
+    },
+    "7_3_sk_1": {
+        "type": 3,
+        "points": [
+            "7_skeletonpoint_3_1_"
+        ]
+    },
+    "7_3_sk_2": {
+        "type": 3,
+        "points": [
+            "7_skeletonpoint_3_2_"
+        ]
+    },
+    "7_3_sk_3": {
+        "type": 5,
+        "points": [
+            "7_skeletonpoint_3_3_"
+        ]
+    },
+    "7_3_sk_4": {
+        "type": 5,
+        "points": [
+            "7_skeletonpoint_3_4_"
+        ]
+    },
+    "7_3_sk_5": {
+        "type": 4,
+        "points": [
+            "7_skeletonpoint_3_5_"
+        ]
+    },
+    "7_3_sk_6": {
+        "type": 4,
+        "points": [
+            "7_skeletonpoint_3_6_"
+        ]
+    },
+    "7_3_sk_7": {
+        "type": 6,
+        "points": [
+            "7_skeletonpoint_3_7_"
+        ]
+    },
+    "7_3_sk_8": {
+        "type": 6,
+        "points": [
+            "7_skeletonpoint_3_8_"
+        ]
+    },
+    "7_4_bl_1": {
+        "type": 9,
+        "points": [
+            "7_bileipoint_4_1_"
+        ]
+    },
+    "7_4_bl_4": {
+        "type": 10,
+        "points": [
+            "7_bileipoint_4_1_"
+        ]
+    },
+    "7_4_sk_1": {
+        "type": 3,
+        "points": [
+            "7_skeletonpoint_4_1_"
+        ]
+    },
+    "7_4_sk_2": {
+        "type": 3,
+        "points": [
+            "7_skeletonpoint_4_2_"
+        ]
+    },
+    "7_4_sk_3": {
+        "type": 5,
+        "points": [
+            "7_skeletonpoint_4_3_"
+        ]
+    },
+    "7_4_sk_4": {
+        "type": 5,
+        "points": [
+            "7_skeletonpoint_4_4_"
+        ]
+    },
+    "7_4_sk_5": {
+        "type": 4,
+        "points": [
+            "7_skeletonpoint_4_1_"
+        ]
+    },
+    "7_4_sk_6": {
+        "type": 4,
+        "points": [
+            "7_skeletonpoint_4_2_"
+        ]
+    },
+    "7_4_sk_7": {
+        "type": 6,
+        "points": [
+            "7_skeletonpoint_4_3_"
+        ]
+    },
+    "7_4_sk_8": {
+        "type": 6,
+        "points": [
+            "7_skeletonpoint_4_4_"
         ]
     },
     "4_1_e_1": {
