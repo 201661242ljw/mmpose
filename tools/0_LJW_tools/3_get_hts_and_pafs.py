@@ -1365,7 +1365,7 @@ if __name__ == '__main__':
     # get_complex_skeletons()
     # main()
     # step2()
-    # get_finale_ann()
+    get_finale_ann()
     # get_only_one_sample()
     # get_sample()
     get_sk_ids()

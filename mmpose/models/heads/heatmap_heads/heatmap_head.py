@@ -453,9 +453,9 @@ class LJW_HeatmapHead(BaseHead):
         self.conv_layer_2 = self._make_conv_layers(192, [256, 256], [3, 3])
         self.conv_layer_3 = self._make_conv_layers(96, [256, 256], [3, 3])
 
-        self.ht_layer_1 = nn.Conv2d(256, 15, 1, 1)
-        self.ht_layer_2 = nn.Conv2d(256, 15, 1, 1)
-        self.ht_layer_3 = nn.Conv2d(256, 92, 1, 1)
+        self.ht_layer_1 = nn.Conv2d(256, self.channel_labels[0][0] + 2 * self.channel_labels[0][1], 1, 1)
+        self.ht_layer_2 = nn.Conv2d(256, self.channel_labels[1][0] + 2 * self.channel_labels[1][1], 1, 1)
+        self.ht_layer_3 = nn.Conv2d(256, self.channel_labels[2][0] + 2 * self.channel_labels[2][1], 1, 1)
 
         # self.use_medium_satge = use_medium_satge
         # self.target_form = target_form
