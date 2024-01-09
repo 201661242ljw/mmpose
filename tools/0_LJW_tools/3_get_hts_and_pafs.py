@@ -1247,7 +1247,7 @@ def get_sk_ids():
                 print(p1_name, pt_2_type[p1_name], p2_name, pt_2_type[p2_name], sk_type)
                 exit()
         rom_num += 1
-    for i in range(39):
+    for i in range(37):
         sk_channels.append([i * 2, i * 2 + 1])
     print(sk_kt_channels)
     print(sk_channels)
@@ -1362,10 +1362,10 @@ if __name__ == '__main__':
         bgr_colors.append(bgr_color)
     pt_colors = bgr_colors
 
-    get_complex_skeletons()
-    main()
-    step2()
+    # get_complex_skeletons()
+    # main()
+    # step2()
     # get_finale_ann()
     # get_only_one_sample()
-    get_sample()
-    # get_sk_ids()
+    # get_sample()
+    get_sk_ids()

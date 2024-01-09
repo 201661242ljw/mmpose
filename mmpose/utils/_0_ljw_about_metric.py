@@ -61,14 +61,14 @@ def get_all_skeletons(paf_ht, all_peaks, img_shape, idx_channel=0, out_form=3, u
 
     if out_form == 3:
         limbSeq = [
-            [2, 0], [4, 1], [3, 0], [5, 1], [1, 0],
-            [2, 2], [4, 4], [3, 3], [5, 5], [4, 2],
-            [5, 3], [2, 3], [4, 5], [3, 2], [5, 4],
-            [3, 5], [5, 5], [5, 5], [3, 3], [2, 2],
-            [4, 4], [2, 6], [4, 7], [7, 6], [2, 8],
-            [3, 8], [4, 9], [5, 9], [3, 8], [5, 9],
-            [9, 8], [10, 0], [11, 0], [12, 1], [13, 1],
-            [13, 11], [12, 10], [10, 11], [12, 13]
+            [[2, 0], [4, 1], [3, 0], [5, 1], [1, 0],
+             [2, 2], [4, 4], [3, 3], [5, 5], [4, 2],
+             [5, 3], [2, 3], [4, 5], [3, 2], [5, 4],
+             [3, 5], [5, 5], [5, 5], [3, 3], [2, 2],
+             [4, 4], [2, 6], [4, 7], [7, 6], [2, 8],
+             [3, 8], [4, 9], [5, 9], [9, 8], [10, 0],
+             [11, 0], [12, 1], [13, 1], [13, 11], [12, 10],
+             [10, 11], [12, 13]]
         ]
         mapIdx = [
             [0, 1], [2, 3], [4, 5], [6, 7], [8, 9],
@@ -78,8 +78,8 @@ def get_all_skeletons(paf_ht, all_peaks, img_shape, idx_channel=0, out_form=3, u
             [40, 41], [42, 43], [44, 45], [46, 47], [48, 49],
             [50, 51], [52, 53], [54, 55], [56, 57], [58, 59],
             [60, 61], [62, 63], [64, 65], [66, 67], [68, 69],
-            [70, 71], [72, 73], [74, 75], [76, 77]
-        ]
+            [70, 71], [72, 73]]
+
     else:
         limbSeq = [
             [1, 0], [1, 1], [1, 2], [1, 3], [1, 4]
@@ -287,12 +287,12 @@ def calculate_skeleton_precision_recall(detections, ground_truths, sigma, iou_th
         temp_iou_1 = 0
         temp_iou_2 = 0
 
-        pr_p1 = [detection[2], detection[3], None,None]
-        pr_p2 = [detection[6], detection[7], None,None]
+        pr_p1 = [detection[2], detection[3], None, None]
+        pr_p2 = [detection[6], detection[7], None, None]
 
         for ground_truth in ground_truths:
-            gt_p1 = [ground_truth[0],ground_truth[1],None]
-            gt_p2 = [ground_truth[3],ground_truth[4],None]
+            gt_p1 = [ground_truth[0], ground_truth[1], None]
+            gt_p2 = [ground_truth[3], ground_truth[4], None]
 
             iou_1 = calculate_iou_like(pr_p1, gt_p1, sigma)
             iou_2 = calculate_iou_like(pr_p2, gt_p2, sigma)
@@ -302,7 +302,6 @@ def calculate_skeleton_precision_recall(detections, ground_truths, sigma, iou_th
                 max_gt = ground_truth
                 temp_iou_1 = iou_1
                 temp_iou_2 = iou_2
-
 
         if temp_iou_1 >= iou_threshold and temp_iou_2 >= iou_threshold:
             tp += 1
