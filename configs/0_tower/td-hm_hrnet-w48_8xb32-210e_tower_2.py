@@ -203,7 +203,7 @@ model = dict(
     #     # checkpoint=r'E:\LJW\Git\mmpose\tools\LJW_Log\2023-12-03_00-22-42\epoch_210.pth'),
     # ),
     head=dict(
-        type='LJW_HeatmapHead',
+        type='LJW_HeatmapHead_3',
         use_medium_satge=use_medium_satge,
         target_form=target_form,
         heatmap_scale=heatmap_scale,

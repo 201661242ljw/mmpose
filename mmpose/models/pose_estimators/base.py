@@ -162,8 +162,8 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
         elif mode == 'tensor':
             return self._forward(inputs)
         elif mode == 'LJW_show_heatmap_and_pafs':
-            if not True:
-                # if True:
+            # if not True:
+            if True:
                 if self.metainfo is not None:
                     for data_sample in data_samples:
                         data_sample.set_metainfo(self.metainfo)
