@@ -1,8 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from .base_head import BaseHead
 from .coord_cls_heads import RTMCCHead, RTMWHead, SimCCHead
-from .heatmap_heads import (AssociativeEmbeddingHead, CIDHead, CPMHead,LJW_HeatmapHead,
-                            HeatmapHead, InternetHead, MSPNHead, ViPNASHead)
+from .heatmap_heads import (AssociativeEmbeddingHead, CIDHead, CPMHead, LJW_HeatmapHead, LJW_HeatmapHead_2,
+                            LJW_HeatmapHead_3, HeatmapHead, InternetHead, MSPNHead, ViPNASHead)
 from .hybrid_heads import DEKRHead, VisPredictHead
 from .regression_heads import (DSNTHead, IntegralRegressionHead,
                                MotionRegressionHead, RegressionHead, RLEHead,
@@ -15,6 +15,7 @@ __all__ = [
     'RegressionHead', 'IntegralRegressionHead', 'SimCCHead', 'RLEHead',
     'DSNTHead', 'AssociativeEmbeddingHead', 'DEKRHead', 'VisPredictHead',
     'CIDHead', 'RTMCCHead', 'TemporalRegressionHead',
-    'TrajectoryRegressionHead', 'MotionRegressionHead', 'EDPoseHead',"LJW_HeatmapHead",
+    'TrajectoryRegressionHead', 'MotionRegressionHead', 'EDPoseHead',
+    "LJW_HeatmapHead", "LJW_HeatmapHead_3", "LJW_HeatmapHead_2",
     'InternetHead', 'RTMWHead'
 ]

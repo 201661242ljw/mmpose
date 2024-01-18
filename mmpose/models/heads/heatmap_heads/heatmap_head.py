@@ -976,6 +976,7 @@ class LJW_HeatmapHead(BaseHead):
             state_dict[prefix + k_new] = v
 
 
+@MODELS.register_module()
 class LJW_HeatmapHead_2(BaseHead):
     """
     这个是普通FPN
@@ -1553,6 +1554,7 @@ class LJW_HeatmapHead_2(BaseHead):
             state_dict[prefix + k_new] = v
 
 
+@MODELS.register_module()
 class LJW_HeatmapHead_3(BaseHead):
     """
     这个是只监督最后1层
