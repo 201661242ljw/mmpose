@@ -6,8 +6,7 @@ dataset_info = dict(
         'Yuksekgonul, Mert and Rogers, Byron and '
         'Bethge, Matthias and '
         'Mathis, Mackenzie W',
-        title='Pretraining boosts out-of-domain robustness '
-        'for pose estimation',
+        title='Pretraining boosts out-of-domain robustness for pose estimation',
         container='Proceedings of the IEEE/CVF Winter Conference on '
         'Applications of Computer Vision',
         year='2021',

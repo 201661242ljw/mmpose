@@ -212,7 +212,7 @@ def calculate_iou_like(kt1, kt2, sigma):
 
     dd = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2)
 
-    oks = math.exp(-(dd / sigma / sigma))
+    oks = math.exp(-(dd /(2 * sigma * sigma)))
     return oks
 
     # w1 = w2 = h1 = h2 = int(sigma * 3)

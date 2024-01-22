@@ -5,8 +5,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import os
+import json
 
-
+from mmpose.utils import ljw_tower_pose_pack_accuracy, ljw_tower_skeleton_accuracy
 def see__or_oks():
     # 计算Z值
     S = 256
@@ -104,7 +105,55 @@ def rename_points_ue():
                 f2.close()
 
 
+def copy_json():
+    src_dir = r"E:\LJW\Git\mmpose\tools\0_LJW_tools\predict_show\00_json_out"
+
+    json_path = r"img_name_2_type.json"
+
+    data = json.load(open(json_path, "r", encoding="utf-8"), strict=False)
+    id_2_name = data['id_2_name']
+    id_2_type = data['id_2_type']
+
+
+    dst_dir = r"E:\LJW\Git\mmpose\tools\0_LJW_tools\predict_show\00_json_out_2"
+    for file_name in os.listdir(src_dir):
+        src = os.path.join(src_dir, file_name)
+        dst_name = id_2_name[file_name.split(".")[0]]
+        a = 1
+        dst = os.path.join(dst_dir, dst_name.split(".")[0] + '.json')
+        if not os.path.exists(dst):
+            shutil.copy(src, dst)
+
+
+
+def test_results(file_path):
+    import copy
+    sigma = 1.5 * 4 * 2
+    iou_threshhold = 0.5
+
+    data = json.load(open(file_path, "r", encoding="utf-8"), strict=False)
+    kt3 = data['kt3']
+    pred_kt_3 = kt3['pred']
+    gt_kt_3 = kt3['gt']
+    tp, fp, fn = ljw_tower_pose_pack_accuracy(pred_kt_3,
+                                              copy.deepcopy(gt_kt_3),
+                                              sigma,
+                                              iou_threshold=iou_threshhold)
+    print(tp, fp, fn)
+
+
+
+
+
+
+
 if __name__ == '__main__':
     # path = os.getcwd()
     # print(path)
-    rename_points_ue()
+    # rename_points_ue()
+    # copy_json()
+
+    file_name = r"scene_2023-11-21_10-34-49_995.json"
+    file_path = r"E:\LJW\Git\mmpose\tools\0_LJW_tools\predict_show\00_json_out_2\{}".format(file_name)
+    test_results(file_path)
+

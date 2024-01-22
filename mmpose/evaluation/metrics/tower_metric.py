@@ -19,6 +19,7 @@ from ..functional import (oks_nms, soft_oks_nms, transform_ann, transform_pred,
                           transform_sigmas)
 
 from ...utils import ljw_tower_pose_pack_accuracy, ljw_tower_skeleton_accuracy
+import json
 
 
 @METRICS.register_module()
@@ -589,6 +590,7 @@ class TowerMetric(BaseMetric):
             0, 0, 0,
             0, 0, 0,
         ]
+
         for (idx_, iou_threshold) in enumerate([0.5, 0.75, 0.95]):
             tps1 = 0
             fps1 = 0
@@ -604,6 +606,12 @@ class TowerMetric(BaseMetric):
             fns_sk = 0
 
             for (pred, gt) in results:
+
+                if idx_ == 0:
+                    temp_dict = {
+                        "img_id": pred['img_id']
+                    }
+
                 # -----------------------------------------------------------------------------------------------
                 # 1
                 # -----------------------------------------------------------------------------------------------
@@ -613,11 +621,19 @@ class TowerMetric(BaseMetric):
                     gt_kt_1[type - 1].append([x_, y_, kt_idx])
                 tp, fp, fn = ljw_tower_pose_pack_accuracy(pred_kt_1,
                                                           copy.deepcopy(gt_kt_1),
-                                                          self.sigma[0] * self.heatmap_scale * 2 * 4,
+                                                          self.sigma[0] * self.heatmap_scale * 4 * 2 ,
                                                           iou_threshold=iou_threshold)
                 tps1 += tp
                 fps1 += fp
                 fns1 += fn
+                if idx_ == 0:
+                    temp_dict['kt1'] = {
+                        'pred': pred_kt_1,
+                        'gt': gt_kt_1,
+                        'tp': tp,
+                        'fp': fp,
+                        'fn': fn
+                    }
                 # -----------------------------------------------------------------------------------------------
                 # 2
                 # -----------------------------------------------------------------------------------------------
@@ -627,11 +643,19 @@ class TowerMetric(BaseMetric):
                     gt_kt_2[type - 1].append([x_, y_, kt_idx])
                 tp, fp, fn = ljw_tower_pose_pack_accuracy(pred_kt_2,
                                                           copy.deepcopy(gt_kt_2),
-                                                          self.sigma[1] * self.heatmap_scale * 2 * 2,
+                                                          self.sigma[1] * self.heatmap_scale * 2 * 2 ,
                                                           iou_threshold=iou_threshold)
                 tps2 += tp
                 fps2 += fp
                 fns2 += fn
+                if idx_ == 0:
+                    temp_dict['kt2'] = {
+                        'pred': pred_kt_2,
+                        'gt': gt_kt_2,
+                        'tp': tp,
+                        'fp': fp,
+                        'fn': fn
+                    }
                 # -----------------------------------------------------------------------------------------------
                 # 3
                 # -----------------------------------------------------------------------------------------------
@@ -641,11 +665,19 @@ class TowerMetric(BaseMetric):
                     gt_kt_3[type - 1].append([x_, y_, kt_idx])
                 tp, fp, fn = ljw_tower_pose_pack_accuracy(pred_kt_3,
                                                           copy.deepcopy(gt_kt_3),
-                                                          self.sigma[2] * self.heatmap_scale * 2,
+                                                          self.sigma[2] * self.heatmap_scale * 2 ,
                                                           iou_threshold=iou_threshold)
                 tps3 += tp
                 fps3 += fp
                 fns3 += fn
+                if idx_ == 0:
+                    temp_dict['kt3'] = {
+                        'pred': pred_kt_3,
+                        'gt': gt_kt_3,
+                        'tp': tp,
+                        'fp': fp,
+                        'fn': fn
+                    }
                 # -----------------------------------------------------------------------------------------------
                 # skeletons                
                 # -----------------------------------------------------------------------------------------------
@@ -661,8 +693,21 @@ class TowerMetric(BaseMetric):
                 tps_sk += tp
                 fps_sk += fp
                 fns_sk += fn
+                if idx_ == 0:
+                    temp_dict['sk'] = {
+                        'pred': pred_sk_3,
+                        'gt': gt_sk_3,
+                        'tp': tp,
+                        'fp': fp,
+                        'fn': fn
+                    }
+                    b = json.dumps(temp_dict, ensure_ascii=False, indent=4)
+                    f2 = open(r"E:\LJW\Git\mmpose\tools\0_LJW_tools\predict_show\00_json_out\{}.json".format(
+                        str(pred['img_id']).zfill(4)), 'w', encoding='utf-8')
+                    f2.write(b)
+                    f2.close()
 
-                # -----------------------------------------------------------------------------------------------
+                    # -----------------------------------------------------------------------------------------------
 
             precision_1 = tps1 / max(1, (tps1 + fps1))
             recall_1 = tps1 / max(1, (tps1 + fns1))

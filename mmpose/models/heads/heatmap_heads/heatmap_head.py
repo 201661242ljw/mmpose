@@ -1024,9 +1024,9 @@ class LJW_HeatmapHead_2(BaseHead):
         self.deconv_layer_23 = self._make_deconv_layers(384, [96], [4])
         self.deconv_layer_34 = self._make_deconv_layers(192, [48], [4])
 
-        self.conv_layer_1 = self._make_conv_layers(384, [256, 256], [3, 3])
-        self.conv_layer_2 = self._make_conv_layers(192, [256, 256], [3, 3])
-        self.conv_layer_3 = self._make_conv_layers(96, [256, 256], [3, 3])
+        self.conv_layer_1 = self._make_conv_layers(192, [256, 256], [3, 3])
+        self.conv_layer_2 = self._make_conv_layers(96, [256, 256], [3, 3])
+        self.conv_layer_3 = self._make_conv_layers(48, [256, 256], [3, 3])
 
         self.ht_layer_1 = nn.Conv2d(256, self.channel_labels[0][0] + 2 * self.channel_labels[0][1], 1, 1)
         self.ht_layer_2 = nn.Conv2d(256, self.channel_labels[1][0] + 2 * self.channel_labels[1][1], 1, 1)
@@ -1169,22 +1169,24 @@ class LJW_HeatmapHead_2(BaseHead):
         """
         (x4, x3, x2, x1) = feats
 
-        x12 = self.deconv_layer_12(x1)
-        x212 = torch.cat([x2, x12], 1)
-        y1 = self.ht_layer_1(self.conv_layer_1(x212))
+        # x12 = self.deconv_layer_12(x1)
+        # x212 = torch.cat([x2, x12], 1)
+        y1 = self.ht_layer_1(self.conv_layer_1(x2))
         # x212y1 = torch.cat([x212, y1], 1)
 
         # x23 = self.deconv_layer_23(x212y1)
-        x23 = self.deconv_layer_23(x212)
-        x323 = torch.cat([x3, x23], 1)
-        y2 = self.ht_layer_2(self.conv_layer_2(x323))
+        # x23 = self.deconv_layer_23(x212)
+        # x323 = torch.cat([x3, x23], 1)
+        y2 = self.ht_layer_2(self.conv_layer_2(x3))
         # x323y2 = torch.cat([x323, y2], 1)
         #
         # x34 = self.deconv_layer_34(x323y2)
 
-        x34 = self.deconv_layer_34(x323)
-        x434 = torch.cat([x4, x34], 1)
-        y3 = self.ht_layer_3(self.conv_layer_3(x434))
+        # x34 = self.deconv_layer_34(x323)
+        # x434 = torch.cat([x4, x34], 1)
+        y3 = self.ht_layer_3(self.conv_layer_3(x4))
+
+
 
         return (y1, y2, y3)
 
