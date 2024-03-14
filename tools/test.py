@@ -173,7 +173,7 @@ if __name__ == '__main__':
     f.write(formatted_time)
     f.close()
 
-    log_date = r"2024-01-15_13-11-37"
+    log_date = r"2024-01-30_00-38-01"
     log_dir = r"E:\LJW\Git\mmpose\tools\LJW_Log\{}".format(log_date)
     max_epoch = 0
     for file_name in os.listdir(log_dir):

@@ -479,7 +479,27 @@ def main():
                     for p_name in ue_data.keys():
                         temp_data[ue_3_img_name]['old_keypoints'].append(
                             [p_name, ue_data[p_name]['x'], ue_data[p_name]['y']])
+
+                    # x1 = ue_data['3_edgepoint_1_1_']['x']
+                    # x2 = ue_data['3_edgepoint_1_2_']['x']
+                    #
+                    # need_shift = x1 > x2
+                    # shift_list = [
+                    #     3,
+                    #     4,
+                    #     1,
+                    #     2,
+                    #     7,
+                    #     8,
+                    #     5,
+                    #     6
+                    # ]
+
                     for (new_point_name, temp_dict) in points_data.items():
+                        # if need_shift and sheet_order==3:
+                        #     [tower_type, floor, point_type, position] = new_point_name.split("_")
+                        #     new_point_name = f"{tower_type}_{floor}_{point_type}_{shift_list[int(position) - 1]}"
+
                         xs = []
                         ys = []
 
@@ -513,6 +533,9 @@ def main():
 
                             # img = cv2.circle(img, center=(x, y), radius=30, color=color, thickness=-1)
                             # cv2.putText(img, text, org, fontFace, fontScale, color, thickness)
+                            if sheet_order == 3:
+                                a = 1
+
                             new_point_names.append(new_point_name)
                             new_xs.append(x)
                             new_ys.append(y)
@@ -568,7 +591,26 @@ def main():
                     for p_name in ue_data.keys():
                         temp_data[ue_7_img_name]['old_keypoints'].append(
                             [p_name, ue_data[p_name]['x'], ue_data[p_name]['y']])
+                    x1 = ue_data['7_edgepoint_1_1_']['x']
+                    x2 = ue_data['7_edgepoint_1_2_']['x']
+
+                    # need_shift = x1 > x2
+                    # shift_list = [
+                    #     3,
+                    #     4,
+                    #     1,
+                    #     2,
+                    #     7,
+                    #     8,
+                    #     5,
+                    #     6
+                    # ]
+
                     for (new_point_name, temp_dict) in points_data.items():
+
+                        # if need_shift and sheet_order==3:
+                        #     [tower_type, floor, point_type, position] = new_point_name.split("_")
+                        #     new_point_name = f"{tower_type}_{floor}_{point_type}_{shift_list[int(position) - 1]}"
                         xs = []
                         ys = []
 
@@ -652,6 +694,15 @@ def get_sample():
                 img = cv2.putText(img, kt_name, (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
                 # cv2.putText(image, text, (5, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
             cv2.imwrite("../data/label_kts/{}.jpg".format(tower_type), img)
+        if "scene_2024" in img_name:
+            # already_draw.append(tower_type)
+            img_path = img_data['file_path']
+            img = cv2.imread(img_path, 1) // 8
+            for [kt_name, x, y, kt_type] in kts:
+                img = cv2.circle(img, center=(x, y), color=pt_colors[kt_type - 1], thickness=-1, radius=3)
+                img = cv2.putText(img, kt_name, (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+                # cv2.putText(image, text, (5, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
+            cv2.imwrite("../data/label_kts/{}".format(img_name), img)
         # if tower_type == "4":
         #     already_draw.append(tower_type)
         #     img_path = img_data['file_path']
@@ -666,6 +717,7 @@ def get_sample():
 def step2():
     # type_ = 2
     for new_size in [256, 384, 512, 640, 768, 1024, 1280]:
+    # for new_size in [256, 384, 512, 640, 768, 1024, 1280][-2:-1]:
         ann_dir = r"../data/00_new_dataset"
         save_dir = r"../data/00_Tower_Dataset/{}".format(new_size)
 
@@ -749,6 +801,7 @@ def step2():
                         new_img = cv2.resize(img, (new_width, new_height))
                         cv2.imwrite(save_path, new_img)
                     # if flag != "4":
+                    # if flag in already_draw_list and "scene_2024" not in img_name:
                     if flag in already_draw_list:
                         continue
 
@@ -770,7 +823,8 @@ def step2():
                     for [x1, y1, t1, x2, y2, t2, kt] in img_data[f"new_skeletons_{type_}"]:
                         new_img = cv2.arrowedLine(new_img, pt1=(x1, y1), pt2=((x2 + x1) // 2, (y1 + y2) // 2),
                                                   color=sk_colores[kt - 1], thickness=[8, 5, 2][type_ - 1])
-                        new_img = cv2.line(new_img, pt1=(x1, y1), pt2=(x2, y2), color=sk_colores[kt - 1], thickness=[8, 5, 2][type_ - 1])
+                        new_img = cv2.line(new_img, pt1=(x1, y1), pt2=(x2, y2), color=sk_colores[kt - 1],
+                                           thickness=[8, 5, 2][type_ - 1])
                     new_img = cv2.rectangle(new_img, pt1=(img_data["bbox"][0], img_data["bbox"][1]),
                                             pt2=(img_data["bbox"][2], img_data["bbox"][2]), color=(0, 255, 0),
                                             thickness=1)
@@ -1199,31 +1253,66 @@ def get_complex_skeletons():
         },
     ]
 
-    book = openpyxl.load_workbook(r"new_points.xlsx")
-    # sh = book.create_sheet("Sheet7")
-    sh = book["Sheet7"]
-    sh['A1'] = 'p1'
-    sh['B1'] = 'p2'
-    sh['C1'] = 'skeleton_type'
-
-    r_num = 2
+    print(f"骨架连接类型\t备注\t总计\t鼓型塔中数量\t羊角型塔中数量\t上字型塔中数量\t酒杯-1型中数量\t酒杯-2型中数量")
     for skeleton_type_, skeleton_data in enumerate(temp_dict):
         skeleton_type = skeleton_type_ + 1
+        num = 0
+        nums = [0,0,0,0,0]
         if "floors" in skeleton_data.keys():
             if len(skeleton_data['floors']) != 0:
                 for (sk_floors, sk_name_pairs) in zip(skeleton_data['floors'], skeleton_data['name_pairs']):
                     for [pt1_floor, pt2_floor] in sk_floors:
                         for [pt1_name, pt2_name] in sk_name_pairs:
-                            sh[f'A{r_num}'] = f"{str(pt1_floor)[0]}_{str(pt1_floor)[1]}_{pt1_name}"
-                            sh[f'B{r_num}'] = f"{str(pt2_floor)[0]}_{str(pt2_floor)[1]}_{pt2_name}"
-                            sh[f'C{r_num}'] = skeleton_type
-                            r_num += 1
-        if "no_direction" in skeleton_data.keys():
-            print("-----------------------")
-            print(skeleton_type)
-            print("-----------------------")
+                            t = str(pt2_floor)[0]
+                            num += 1
+                            if t =='1':
+                                nums[0] += 1
 
-    book.save(r"new_points.xlsx")
+                            if t =='2':
+                                nums[1] += 1
+
+                            if t =='3':
+                                num-=1
+
+                            if t =='4':
+                                nums[2] += 1
+
+                            if t =='5':
+                                nums[3] += 1
+
+                            if t =='6':
+                                nums[4] += 1
+
+                            if t =='7':
+                                num-=1
+        d = skeleton_data["description"]
+        print(f"{skeleton_type_ }\t{d}\t{num}\t{nums[0]}\t{nums[1]}\t{nums[2]}\t{nums[3]}\t{nums[4]}")
+
+    # book = openpyxl.load_workbook(r"new_points.xlsx")
+    # # sh = book.create_sheet("Sheet7")
+    # sh = book["Sheet7"]
+    # sh['A1'] = 'p1'
+    # sh['B1'] = 'p2'
+    # sh['C1'] = 'skeleton_type'
+    #
+    # r_num = 2
+    # for skeleton_type_, skeleton_data in enumerate(temp_dict):
+    #     skeleton_type = skeleton_type_ + 1
+    #     if "floors" in skeleton_data.keys():
+    #         if len(skeleton_data['floors']) != 0:
+    #             for (sk_floors, sk_name_pairs) in zip(skeleton_data['floors'], skeleton_data['name_pairs']):
+    #                 for [pt1_floor, pt2_floor] in sk_floors:
+    #                     for [pt1_name, pt2_name] in sk_name_pairs:
+    #                         sh[f'A{r_num}'] = f"{str(pt1_floor)[0]}_{str(pt1_floor)[1]}_{pt1_name}"
+    #                         sh[f'B{r_num}'] = f"{str(pt2_floor)[0]}_{str(pt2_floor)[1]}_{pt2_name}"
+    #                         sh[f'C{r_num}'] = skeleton_type
+    #                         r_num += 1
+    #     if "no_direction" in skeleton_data.keys():
+    #         print("-----------------------")
+    #         print(skeleton_type)
+    #         print("-----------------------")
+    #
+    # book.save(r"new_points.xlsx")
 
 
 def get_sk_ids():
@@ -1366,10 +1455,10 @@ if __name__ == '__main__':
         bgr_colors.append(bgr_color)
     pt_colors = bgr_colors
 
-    # get_complex_skeletons()
+    get_complex_skeletons()
     # main()
     # step2()
-    get_finale_ann()
+    # get_finale_ann()
     # get_only_one_sample()
     # get_sample()
     # get_sk_ids()

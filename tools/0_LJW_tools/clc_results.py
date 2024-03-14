@@ -173,7 +173,7 @@ def judge_resluts():
     r_num = 2
     thresh_kt = 0.9
     thresh_sk = 0.85
-    for (tower_type, tower_list)  in data['types'].items():
+    for (tower_type, tower_list) in data['types'].items():
         tp1 = 0
         fp1 = 0
         fn1 = 0
@@ -202,8 +202,6 @@ def judge_resluts():
             fp_sk += temp_dict['sk']['fp']
             fn_sk += temp_dict['sk']['fn']
 
-
-
             AP3_ = temp_dict['kt3']['tp'] / (max(1, temp_dict['kt3']['tp'] + temp_dict['kt3']['fp']))
             AR3_ = temp_dict['kt3']['tp'] / (max(1, temp_dict['kt3']['tp'] + temp_dict['kt3']['fn']))
             AF3_ = 2 * AP3_ * AR3_ / (AP3_ + AR3_)
@@ -211,8 +209,6 @@ def judge_resluts():
             AP_SK_ = temp_dict['sk']['tp'] / (max(1, temp_dict['sk']['tp'] + temp_dict['sk']['fp']))
             AR_SK_ = temp_dict['sk']['tp'] / (max(1, temp_dict['sk']['tp'] + temp_dict['sk']['fn']))
             AF_SK_ = 2 * AP_SK_ * AR_SK_ / max((AP_SK_ + AR_SK_), 1)
-
-
 
             if AF3_ > thresh_kt and AF_SK_ > thresh_sk:
                 acc_num += 1
@@ -234,26 +230,24 @@ def judge_resluts():
         AR_sk = tp_sk / max(1, (tp_sk + fn_sk))
         AF_sk = 2 * (AP_sk * AR_sk) / max(1e-4, (AP_sk + AR_sk))
 
-
-
         lst = [
-                tower_type,
-                AP1,
-                AR1,
-                AF1,
-                AP2,
-                AR2,
-                AF2,
-                AP3,
-                AR3,
-                AF3,
-                AP_sk,
-                AR_sk,
-                AF_sk,
-                acc_num,
-                num,
-                acc_num / num
-            ]
+            tower_type,
+            AP1,
+            AR1,
+            AF1,
+            AP2,
+            AR2,
+            AF2,
+            AP3,
+            AR3,
+            AF3,
+            AP_sk,
+            AR_sk,
+            AF_sk,
+            acc_num,
+            num,
+            acc_num / num
+        ]
         for c_num, item_ in enumerate(lst):
             if isinstance(item_, float):
                 lst[c_num] = round(item_, 4)
@@ -262,7 +256,36 @@ def judge_resluts():
         print(lst)
     book.save("result.xlsx")
 
+
+def get_num():
+    json_path = r"img_name_2_type.json"
+
+    data = json.load(open(json_path, "r", encoding="utf-8"), strict=False)
+    id_2_name = data['id_2_name']
+    id_2_type = data['id_2_type']
+    name_2_type = data['name_2_type']
+
+    src_dir = r"E:\LJW\Git\mmpose\tools\data\00_Tower_Dataset\384\anns"
+
+    lst = [
+        [0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0]
+    ]
+
+    for dataset_idx, dataset in enumerate(['train', "val", "test"]):
+        json_path = os.path.join(src_dir, f"tower_info_{dataset}.json")
+        data = json.load(open(json_path, "r", encoding="utf-8"), strict=False)
+        for (img_name, temp_dict) in data.items():
+            type = name_2_type[img_name] - 1
+            lst[dataset_idx][type] += 1
+    print(lst[0])
+    print(lst[1])
+    print(lst[2])
+
+
 if __name__ == '__main__':
-    # get_results_json()
-    #
+    get_transform_json()
+    get_results_json()
     judge_resluts()
+    get_num()

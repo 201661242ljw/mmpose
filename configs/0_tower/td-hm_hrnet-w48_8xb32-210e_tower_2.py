@@ -5,7 +5,7 @@ heatmap_scale = [16, 8, 4]
 batch_size = 2
 
 input_size = 1024
-epoch_num = 50
+epoch_num = 100
 
 use_medium_satge = True
 target_form = 3
@@ -203,7 +203,7 @@ model = dict(
     #     # checkpoint=r'E:\LJW\Git\mmpose\tools\LJW_Log\2023-12-03_00-22-42\epoch_210.pth'),
     # ),
     head=dict(
-        type='LJW_HeatmapHead_2',
+        type='LJW_HeatmapHead',
         use_medium_satge=use_medium_satge,
         target_form=target_form,
         heatmap_scale=heatmap_scale,

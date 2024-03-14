@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import logging
+import os
 from argparse import ArgumentParser
 
 from mmcv.image import imread
@@ -12,10 +13,10 @@ from mmpose.structures import merge_data_samples
 
 def parse_args():
     parser = ArgumentParser()
-    parser.add_argument('img', help='Image file')
-    parser.add_argument('config', help='Config file')
-    parser.add_argument('checkpoint', help='Checkpoint file')
-    parser.add_argument('--out-file', default=None, help='Path to output file')
+    parser.add_argument('--img', help='Image file', default=r"C:\Users\concrete\Desktop\0000_SCI\test\2.png")
+    parser.add_argument('--config', help='Config file', default=config_path)
+    parser.add_argument('--checkpoint', help='Checkpoint file', default=model_path)
+    parser.add_argument('--out-file', help='Path to output file', default=out_path)
     parser.add_argument(
         '--device', default='cuda:0', help='Device used for inference')
     parser.add_argument(
@@ -110,8 +111,12 @@ def main():
 
 
 if __name__ == '__main__':
-
-    img_path = r""
-
-
+    config_path = r"E:\LJW\Git\mmpose\tools\LJW_Log\2024-01-30_00-38-01\td-hm_hrnet-w48_8xb32-210e_tower_2.py"
+    model_path = r"E:\LJW\Git\mmpose\tools\LJW_Log\2024-01-30_00-38-01\best_coco_AP_epoch_96.pth"
+    out_path = r"E:\LJW\Git\mmpose\tools\0_LJW_tools\test"
+    # img_dir = r"C:\Users\concrete\Desktop\0000_SCI\test"
+    # for file_name in os.listdir(img_dir):
+    #     img_path = os.path.join(img_dir, file_name)
+    #     s = r"E:\LJW\Git\mmpose\openmmlab\python.exe E:\LJW\Git\mmpose\demo\image_demo.py --img_path {}".format(img_path)
+    #     os.system(s)
     main()

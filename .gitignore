@@ -136,6 +136,7 @@ docs/**/modelzoo.md
 tools/LJW_Log
 tools/LJW_test
 tools/0_LJW_tools/predict_show
+tools/0_LJW_tools/backup
 tools/0_LJW_tools/predict_show*
 tools/0_LJW_tools/show
 update.cmd
@@ -149,3 +150,4 @@ tools/data/00_Tower_Dataset
 tools/data/*
 openmmlab
 tools/0_LJW_tools/label
+*.rar

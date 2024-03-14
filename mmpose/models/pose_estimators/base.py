@@ -291,6 +291,8 @@ class BasePoseEstimator(BaseModel, metaclass=ABCMeta):
 
                     all_connection = get_all_skeletons(paf_avg, all_peaks, img.shape[0], idx_channel=2)
                     draw_tower(all_connection, img, save_dir, all_peaks)
+                    print("finished")
+                    exit()
                     a = 1
                     # pt_img = copy.deepcopy(img)
                     # pt_img = pt_img // 4
